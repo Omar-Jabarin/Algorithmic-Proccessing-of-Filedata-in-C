@@ -266,7 +266,38 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue q, void* object){
 		q->quotas[q->size-1].object=NULL;
 	return ISRAELIQUEUE_SUCCESS;
 	}
-	
+
+void* IsraeliQueueDequeue(IsraeliQueue q){
+	if (q==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueDequeue: q is NULL");
+		#endif
+		return NULL;
+	}
+
+	if (q->objects[0]==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueDequeue: q is empty");
+		#endif
+		return NULL;
+	}
+
+	void* object=q->objects[0];
+	for (int i=0; i<q->size-1; i++){
+		q->objects[i]=q->objects[i+1];
+		q->quotas[i]=q->quotas[i+1];
+	}
+	q->objects=realloc(q->objects, (q->size-1)*sizeof(void*));
+	if (q->objects==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueDequeue: realloc failed in IsraeliQueueDequeue");
+		#endif
+		return NULL;
+	}
+	q->size-=1;
+	return object;
+
+}
 
 //test 3
 
@@ -292,7 +323,7 @@ int MockFriendshipFunction(void* object1, void* object2){// 8 and 5
 	}
 
 	if ((*(int*)object1==2 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==2)){
-		return 4;
+		return 9;
 	}
 	if ((*(int*)object1==1 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==1)){
 		return 9;
@@ -338,13 +369,12 @@ void Test3(){
 		IsraeliQueueEnqueue(q, &arr[i]);
 	}
 	IsraeliQueueEnqueue(q, eight);
-	
+	IsraeliQueue p=IsraeliQueueClone(q);
+
+	int* out=(int*)IsraeliQueueDequeue(q);
+	PrintIsraeliQueue(p);
 	PrintIsraeliQueue(q);
-
-
-
-
-
+	printf("out is %d", *out);
 
 
 
