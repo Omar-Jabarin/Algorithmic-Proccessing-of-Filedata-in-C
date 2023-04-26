@@ -54,8 +54,12 @@ Relation CheckRelation( FriendshipFunction* friendshipfunctions,
 		count++;
 		friendshipfunctions++;
 	}
-	double avg_friendship_pts=(double)sum_of_friendship_pts/count;
-	if (avg_friendship_pts<(double)rivalry_th){
+	double average_friendship_points=0;
+
+	if (count!=0){
+	average_friendship_points=(double)sum_of_friendship_pts/count;
+	}
+	if (average_friendship_points<(double)rivalry_th){
 		current_relation=RIVAL;
 		return current_relation;
 	}
@@ -213,6 +217,8 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue q, void* object){
 
 		}
 	}
+
+	for (int)
 
 
 		
