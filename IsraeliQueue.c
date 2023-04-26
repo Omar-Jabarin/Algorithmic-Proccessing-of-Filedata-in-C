@@ -196,29 +196,36 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue q, void* object){
 
 	int friend_location=UNINITIALIZED;
 	bool skipped_to_friend=false;
+	bool blocked=false;
 
 	for (int i=0; i<((q->size)-1); i++){
+	friend_location=UNINITIALIZED;
+	skipped_to_friend=false;
+	blocked=false;
+
 		if(CheckRelation(q->friendshipfunctions, q->objects[i], object, q->friendship_th, q->rivalry_th)==FRIEND){
 			if (q->quotas[i].friendship_quota<FRIEND_QUOTA){
 				for(int j=i+1; j<((q->size)-1);  j++){
 					if (CheckRelation(q->friendshipfunctions, q->objects[j], object, q->friendship_th, q->rivalry_th)==RIVAL){
 						if (q->quotas[j].rivalry_quota<RIVAL_QUOTA){
 							q->quotas[j].rivalry_quota++;
-							i=j; //j is the index of the current blocking rival
+							i=j;
+							blocked=true; //j is the index of the current blocking rival
 							break;
 						}
 					}
-				}
+				}	
+					if (!blocked){
 					friend_location=i; //friend_location is the index of the first available friend who didn't exceed quota and cannot be blocked by a rival
 					skipped_to_friend=true;
 					q->quotas[friend_location].friendship_quota++;
-					
+					break;
+					}
 			}
 
 		}
 	}
 
-	for (int)
 
 
 		
@@ -261,6 +268,95 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue q, void* object){
 	}
 	
 
+//test 3
+
+int arr[]={7,6,5,4,3,2,1};
+
+int MockFriendshipFunction(void* object1, void* object2){// 8 and 5
+	if ((*(int*)object1==7 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==7)){
+		return 9;
+	}
+
+	if ((*(int*)object1==6 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==6)){
+		return 4;
+	}
+	if ((*(int*)object1==5 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==5)){
+		return 4;
+	}
+
+	if ((*(int*)object1==4 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==4)){
+		return 9;
+	}
+	if ((*(int*)object1==3 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==3)){
+		return 4;
+	}
+
+	if ((*(int*)object1==2 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==2)){
+		return 4;
+	}
+	if ((*(int*)object1==1 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==1)){
+		return 9;
+	}
+
+		return 6; //6 is neutral 4 is rival and 9 is friend
+
+
+}
+
+int comparison_function_mock(void *obj1, void *obj2) {
+    int id1 = *(int *)obj1;
+    int id2 = *(int *)obj2;
+
+    return id1 - id2;
+}
+
+FriendshipFunction friendshipfunctions[]={MockFriendshipFunction, MockFriendshipFunction, NULL};
+
+int eight_value = 8;
+int *eight = &eight_value;
+
+void PrintIsraeliQueue(IsraeliQueue q) {
+    if (q == NULL) {
+        printf("Invalid queue.\n");
+        return;
+    }
+
+    printf("IsraeliQueue content:\n");
+    for (int i = 0; i < q->size - 1; i++) {
+        printf("%d ", *((int *)q->objects[i]));
+    }
+    printf("\n");
+}
+
+
+void Test3(){
+	
+
+
+	IsraeliQueue q=IsraeliQueueCreate(friendshipfunctions, comparison_function_mock, 8, 5);
+	for (int i=0; i<7; i++){
+		IsraeliQueueEnqueue(q, &arr[i]);
+	}
+	IsraeliQueueEnqueue(q, eight);
+	
+	PrintIsraeliQueue(q);
+
+
+
+
+
+
+
+
+
+}
+
+int main(){
+	Test3();
+	return 0;
+}
+
+/*
 //test 2
 
 
@@ -312,11 +408,11 @@ void Test_CheckRelation() {
 
 
     result = CheckRelation(friendship_functions, &alice, &charlie, friendship_threshold, rivalry_threshold);
-    printf("Test 2: Alice and Charlie - Result: %s, Expected: FRIEND\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
+    printf("Test 2: Alice and Charlie - Result: %s, Expected: RIVAL\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
 
 
     result = CheckRelation(friendship_functions, &alice, &dave, friendship_threshold, rivalry_threshold);
-    printf("Test 3: Alice and Dave - Result: %s, Expected: RIVAL\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
+    printf("Test 3: Alice and Dave - Result: %s, Expected: FRIEND\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
 
     result = CheckRelation(friendship_functions, &bob, &charlie, friendship_threshold, rivalry_threshold);
     printf("Test 4: Bob and Charlie - Result: %s, Expected: NEUTRAL\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
@@ -334,7 +430,7 @@ int main() {
 }
 
 	
-/* test 1
+ test 1
 
 // Mock FriendshipFunction implementation
 int friendship_function_mock(void *obj1, void *obj2) {
