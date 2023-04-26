@@ -267,6 +267,8 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue q, void* object){
 	return ISRAELIQUEUE_SUCCESS;
 	}
 
+
+
 void* IsraeliQueueDequeue(IsraeliQueue q){
 	if (q==NULL){
 		#ifndef DNDEBUG
@@ -299,6 +301,41 @@ void* IsraeliQueueDequeue(IsraeliQueue q){
 
 }
 
+
+bool IsraeliQueueContains(IsraeliQueue q, void * object){
+	if (q==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueContains: q is NULL");
+		#endif
+		return false;
+	}
+
+	if (object==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueContains: object is NULL");
+		#endif
+		return false;
+	}
+
+	for (int i=0; i<q->size-1; i++){
+		if (q->objects[i]==object){
+			return true;
+		}
+	}
+	return false;
+
+
+
+
+
+
+
+
+
+
+
+
+}
 //test 3
 
 int arr[]={7,6,5,4,3,2,1};
@@ -375,8 +412,23 @@ void Test3(){
 	PrintIsraeliQueue(p);
 	PrintIsraeliQueue(q);
 	printf("out is %d", *out);
+	for (int i=0; i<7; i++){
+		if (IsraeliQueueContains(p, &arr[i])!=true){
+		printf("IsraeliQueueContains failed on p, doesn't contain %d\n", arr[i]);	
+		}
+	}
+	if (IsraeliQueueContains(p, eight)!=true){
+		printf("IsraeliQueueContains failed on p, doesn't contain 8\n");	
+	}
 
-
+	for (int i=1; i<7; i++){
+		if (IsraeliQueueContains(q, &arr[i])!=true){
+		printf("IsraeliQueueContains failed on q, doesn't contain %d\n", arr[i]);
+		}	
+	}
+	if(IsraeliQueueContains(q, eight)!=true){
+		printf("IsraeliQueueContains failed on q, doesn't contains 8\n");	
+	}
 
 
 }
