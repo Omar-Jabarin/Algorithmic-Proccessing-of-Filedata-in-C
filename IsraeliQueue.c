@@ -31,6 +31,7 @@ struct IsraeliQueue_t {
 	int friendship_th;
 	int rivalry_th;
 	FriendshipFunction* friendshipfunctions;
+	bool updatedFriendshipfunction;
 	ComparisonFunction compare;
 	void** objects;
 	int size;
@@ -111,6 +112,7 @@ newqueue->friendship_th=friendship_th;
 newqueue->rivalry_th=rivalry_th;
 newqueue->friendshipfunctions=friendshipfunctions;
 newqueue->compare=compare;
+newqueue->updatedFriendshipfunction=false;
 newqueue->objects=malloc(sizeof(void*));
 if (newqueue->objects==NULL){
 	#ifndef DNDEBUG
@@ -151,6 +153,7 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue q){
 	newqueue->objects=CopyObjectArray(q->objects, q->size);
 	newqueue->quotas=CopyQuotas(q->quotas, q->size);
 	newqueue->size=q->size;
+	newqueue->updatedFriendshipfunction=q->updatedFriendshipfunction;
 
 	return newqueue;
 }
@@ -325,17 +328,51 @@ bool IsraeliQueueContains(IsraeliQueue q, void * object){
 	return false;
 
 
-
-
-
-
-
-
-
-
-
-
 }
+
+IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue q, FriendshipFunction new_friendship_function) {
+    if (q == NULL || new_friendship_function == NULL) {
+        #ifndef DNDEBUG
+        printf("IsraeliQueueAddFriendshipMeasure: q or new_friendship_function is NULL");
+        #endif
+        return ISRAELIQUEUE_BAD_PARAM;
+    }
+
+    int count = 0;
+    while (q->friendshipfunctions[count] != NULL) {
+        count++;
+    }
+
+    FriendshipFunction *new_array = malloc((count + 2) * sizeof(FriendshipFunction));
+    if (new_array == NULL) {
+        #ifndef DNDEBUG
+        printf("IsraeliQueueAddFriendshipMeasure: malloc failed");
+        #endif
+        return ISRAELIQUEUE_ALLOC_FAILED;
+    }
+
+    for (int i = 0; i < count; i++) {
+        new_array[i] = q->friendshipfunctions[i];
+    }
+
+    new_array[count] = new_friendship_function;
+
+    new_array[count + 1] = NULL;
+	if (q->updatedFriendshipfunction==true){
+    free(q->friendshipfunctions);
+	}
+    q->friendshipfunctions = new_array;
+	q->updatedFriendshipfunction=true;
+
+    return ISRAELIQUEUE_SUCCESS;
+}
+
+
+
+
+
+
+
 //test 3
 
 int arr[]={7,6,5,4,3,2,1};
@@ -430,6 +467,9 @@ void Test3(){
 		printf("IsraeliQueueContains failed on q, doesn't contains 8\n");	
 	}
 
+	IsraeliQueueAddFriendshipMeasure(q, MockFriendshipFunction);
+	IsraeliQueueAddFriendshipMeasure(q, MockFriendshipFunction);
+	
 
 }
 
