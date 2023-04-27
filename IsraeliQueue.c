@@ -400,25 +400,36 @@ int IsraeliQueueSize(IsraeliQueue q){
 
 	return q->size-1;
 }
-
-void *DequeueLastElement(IsraeliQueue q){
-	if (q==NULL){
+void* IsraeliQueueDequeueAtIndex(IsraeliQueue q, int index){
+	if (q == NULL){
 		#ifndef DNDEBUG
-		printf("DequeueLastElement: q is NULL");
-		return NULL;
-		#endif
-	}
-
-	if (q->objects[0]==NULL){
-		#ifndef DNDEBUG
-		printf("DequeueLastElement: q is empty");
+		printf("IsraeliQueueDequeueAtIndex: q is NULL");
 		#endif
 		return NULL;
 	}
-	void* LastElement=q->objects[q->size-2];
-	q->objects[q->size-2]=NULL;
-	return LastElement;
+	if (index < 0 || index >= q->size - 1){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueDequeueAtIndex: invalid index");
+		#endif
+		return NULL;
+	}
+	void* object = q->objects[index];
+	for (int i = index; i < q->size - 1; i++){
+		q->objects[i] = q->objects[i + 1];
+		q->quotas[i] = q->quotas[i + 1];
+	}
+	void** temp_objects = realloc(q->objects, (q->size - 1) * sizeof(void*));
+	if (temp_objects == NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueDequeueAtIndex: realloc failed in IsraeliQueueDequeueAtIndex");
+		#endif
+		return NULL;
+	}
+	q->objects = temp_objects;
+	q->size -= 1;
+	return object;
 }
+
 
 
 
@@ -460,6 +471,7 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue q){
 		void * object;
 		bool dequeued;
 	} Dequeued;
+	
 	Dequeued* dequeued=malloc((q->size-1)*sizeof(Dequeued));
 	if (dequeued==NULL){
 		#ifndef DNDEBUG
@@ -491,6 +503,48 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue q){
 
 
 	return ISRAELIQUEUE_SUCCESS;
+}
+
+IsraeliQueueError IsraeliQueueImprovePosition(IsraeliQueue q){
+    if (q==NULL){
+        #ifndef DNDEBUG
+        printf("IsraeliQueueImprovePosition: q is NULL");
+        #endif
+        return ISRAELIQUEUE_BAD_PARAM;
+    }
+
+    // An array to keep track of the dequeued elements
+    void** dequeuedElements = malloc(q->size * sizeof(void*));
+    if (dequeuedElements == NULL){
+        #ifndef DNDEBUG
+        printf("IsraeliQueueImprovePosition: malloc failed");
+        #endif
+        return ISRAELIQUEUE_ALLOC_FAILED;
+    }
+    int dequeuedCount = 0;
+
+    for (int i = q->size - 2; i >= 0; i--) {
+        bool alreadyProcessed = false;
+        // Check if the current element has been already dequeued and enqueued again
+        for (int j = 0; j < dequeuedCount; j++) {
+            if (q->objects[i] == dequeuedElements[j]) {
+                alreadyProcessed = true;
+                break;
+            }
+        }
+        // If the element has not been dequeued yet, dequeue and enqueue it again
+        if (!alreadyProcessed) {
+            void* object = IsraeliQueueDequeueAtIndex(q, i);
+            if (object == NULL) {
+                free(dequeuedElements);
+                return ISRAELI_QUEUE_ERROR;
+            }
+            dequeuedElements[dequeuedCount++] = object;
+            IsraeliQueueEnqueue(q, object);
+        }
+    }
+    free(dequeuedElements);
+    return ISRAELIQUEUE_SUCCESS;
 }
 
 
