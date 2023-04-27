@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <string.h>
 #define UNINITIALIZED -1
+#define CANNOT_FIND -2
 
 typedef enum { FRIEND, RIVAL, NEUTRAL } Relation;
 
@@ -96,7 +97,6 @@ printf("IsraeliQueueCreate: friendshipfunctions or compare is NULL");
 	return NULL;
 
 }
-
 IsraeliQueue newqueue = malloc(sizeof(*newqueue));
 if (newqueue==NULL){
 
@@ -106,8 +106,6 @@ printf("IsraeliQueueCreate: malloc failed in IsraeliQueueCreate");
 
 	return NULL;
 }
-
-
 newqueue->friendship_th=friendship_th;
 newqueue->rivalry_th=rivalry_th;
 newqueue->friendshipfunctions=friendshipfunctions;
@@ -367,8 +365,133 @@ IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue q, FriendshipFun
     return ISRAELIQUEUE_SUCCESS;
 }
 
+IsraeliQueueError IsraeliQueueUpdateFriendshipThreshold(IsraeliQueue q, int new_threshold){
+	if (q==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueUpdateFriendshipThreshold: q is NULL");
+		#endif
+		return ISRAELIQUEUE_BAD_PARAM;
+	}
+
+	q->friendship_th=new_threshold;
+	return ISRAELIQUEUE_SUCCESS;
+}
+
+IsraeliQueueError IsraeliQueueUpdateRivalryThreshold(IsraeliQueue q, int new_threshold){
+	if (q==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueUpdateRivalryThreshold: q is NULL");
+		#endif
+		return ISRAELIQUEUE_BAD_PARAM;
+	}
+
+	q->rivalry_th=new_threshold;
+	return ISRAELIQUEUE_SUCCESS;
+
+}
+
+int IsraeliQueueSize(IsraeliQueue q){
+	if (q==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueSize: q is NULL");
+		#endif
+		return 0;
+	}
+
+	return q->size-1;
+}
+
+void *DequeueLastElement(IsraeliQueue q){
+	if (q==NULL){
+		#ifndef DNDEBUG
+		printf("DequeueLastElement: q is NULL");
+		return NULL;
+		#endif
+	}
+
+	if (q->objects[0]==NULL){
+		#ifndef DNDEBUG
+		printf("DequeueLastElement: q is empty");
+		#endif
+		return NULL;
+	}
+	void* LastElement=q->objects[q->size-2];
+	q->objects[q->size-2]=NULL;
+	return LastElement;
+}
 
 
+
+int FindIsraeliQueueObject(IsraeliQueue q, void* object){
+	if (q==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueFindObject: q is NULL");
+		#endif
+		return CANNOT_FIND;
+	}
+
+	if (object==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueFindObject: object is NULL");
+		#endif
+		return CANNOT_FIND;
+	}
+
+	for (int i=0; i<q->size-1; i++){
+		if (q->objects[i]==object){
+			return i;
+		}
+	}
+	return CANNOT_FIND;
+}
+
+
+
+
+IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue q){
+	if (q==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueImprovePositions: q is NULL");
+		#endif
+		return ISRAELIQUEUE_BAD_PARAM;
+	}
+		
+	typedef struct {
+		void * object;
+		bool dequeued;
+	} Dequeued;
+	Dequeued* dequeued=malloc((q->size-1)*sizeof(Dequeued));
+	if (dequeued==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueImprovePositions: malloc failed");
+		#endif
+		return ISRAELIQUEUE_ALLOC_FAILED;
+	}
+	for (int i=0; i<q->size-1; i++){
+		dequeued[i].object=q->objects[i];
+		dequeued[i].dequeued=false;
+	}
+
+	void* currentElement=DequeueLastElement(q);
+	Quotas currentQuotas=q->quotas[q->size-2];
+	currentQuotas.object=currentElement;
+	if(IsraeliQueueEnqueue(q, currentElement)!=ISRAELIQUEUE_SUCCESS){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueImprovePositions: IsraeliQueueEnqueue failed");
+		#endif
+		return ISRAELIQUEUE_BAD_PARAM;
+	}
+	int i=FindIsraeliQueueObject(q, currentElement);
+	if (i==CANNOT_FIND){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueImprovePositions: IsraeliQueueFindObject failed");
+		#endif
+		return ISRAELI_QUEUE_ERROR;
+	}
+
+
+	return ISRAELIQUEUE_SUCCESS;
+}
 
 
 
@@ -415,7 +538,7 @@ int comparison_function_mock(void *obj1, void *obj2) {
     return id1 - id2;
 }
 
-FriendshipFunction friendshipfunctions[]={MockFriendshipFunction, MockFriendshipFunction, NULL};
+FriendshipFunction friendshipfunctions[]={NULL};
 
 int eight_value = 8;
 int *eight = &eight_value;
@@ -439,6 +562,10 @@ void Test3(){
 
 
 	IsraeliQueue q=IsraeliQueueCreate(friendshipfunctions, comparison_function_mock, 8, 5);
+
+	IsraeliQueueAddFriendshipMeasure(q,MockFriendshipFunction);
+	IsraeliQueueAddFriendshipMeasure(q, MockFriendshipFunction);
+	
 	for (int i=0; i<7; i++){
 		IsraeliQueueEnqueue(q, &arr[i]);
 	}
@@ -469,8 +596,6 @@ void Test3(){
 
 	IsraeliQueueAddFriendshipMeasure(q, MockFriendshipFunction);
 	IsraeliQueueAddFriendshipMeasure(q, MockFriendshipFunction);
-	
-
 }
 
 int main(){
