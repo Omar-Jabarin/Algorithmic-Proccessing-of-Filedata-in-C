@@ -11,96 +11,96 @@
 typedef enum { FRIEND, RIVAL, NEUTRAL } Relation;
 
 typedef struct{
-	int friendship_quota;
-	int rivalry_quota;
-	void* object;
-} Quotas;
+	int m_friendshipQuota;
+	int m_rivalryQuota;
+	void* m_object;
+} Quota;
 
-Quotas* CopyQuotas(Quotas* quotas, int size){
-	Quotas* newquotas = malloc(size*sizeof(Quotas));
-	if (newquotas==NULL){
+Quota* copyQuotas(Quota* quotas, int size){
+	Quota* newQuotas = malloc(size*sizeof(Quota));
+	if (newQuotas==NULL){
 	#ifndef DNDEBUG
-	printf("CopyQuotas: malloc failed in CopyQuotas");
+	printf("copyQuotas: malloc failed in copyQuotas");
 	#endif
 		return NULL;
 	}
 	for (int i=0; i<size; i++){
-		newquotas[i]=quotas[i];
+		newQuotas[i]=quotas[i];
 	}
-	return newquotas;
+	return newQuotas;
 }
 
 struct IsraeliQueue_t {
-	int friendship_th;
-	int rivalry_th;
-	FriendshipFunction* friendshipfunctions;
-	bool updatedFriendshipfunction;
-	ComparisonFunction compare;
-	void** objects;
-	int size;
-	Quotas* quotas;
+	int m_friendshipThreshold;
+	int m_rivalryThreshold;
+	FriendshipFunction* m_friendshipFunctions;
+	bool m_updatedFriendshipFunctions;
+	ComparisonFunction m_compare;
+	void** m_objects;
+	int m_size;
+	Quota* m_quotas;
 };
 
 
-Relation CheckRelation( FriendshipFunction* friendshipfunctions,
- void* object1, void* object2, int friendship_th, int rivalry_th ){
+Relation checkRelation( FriendshipFunction* friendshipFunctions,
+ void* firstObject, void* secondObject, int friendshipThreshold, int rivalryThreshold ){
 	
-	Relation current_relation=NEUTRAL;
-	int sum_of_friendship_pts=0;
+	Relation currentRelation=NEUTRAL;
+	int sumOfFriendshipPoints=0;
 	int count=0;
-	while (friendshipfunctions!=NULL && *friendshipfunctions!=NULL){
-		if ((*friendshipfunctions)(object1, object2)>friendship_th){
-			current_relation=FRIEND;
-			return current_relation;
+	while (friendshipFunctions!=NULL && *friendshipFunctions!=NULL){
+		if ((*friendshipFunctions)(firstObject, secondObject)>friendshipThreshold){
+			currentRelation=FRIEND;
+			return currentRelation;
 		}
 
-		sum_of_friendship_pts+=(*friendshipfunctions)(object1, object2);
+		sumOfFriendshipPoints+=(*friendshipFunctions)(firstObject, secondObject);
 		count++;
-		friendshipfunctions++;
+		friendshipFunctions++;
 	}
-	double average_friendship_points=0;
+	double averageFriendshipPoints=0;
 
 	if (count!=0){
-	average_friendship_points=(double)sum_of_friendship_pts/count;
+	averageFriendshipPoints=(double)sumOfFriendshipPoints/count;
 	}
-	if (average_friendship_points<(double)rivalry_th){
-		current_relation=RIVAL;
-		return current_relation;
+	if (averageFriendshipPoints<(double)rivalryThreshold){
+		currentRelation=RIVAL;
+		return currentRelation;
 	}
 
-	assert(current_relation==NEUTRAL);
-	return current_relation;
+	assert(currentRelation==NEUTRAL);
+	return currentRelation;
 
 	}
 
 void** CopyObjectArray(void** objects, int size){
-	void** newobjects = malloc(size*sizeof(void*));
-	if (newobjects==NULL){
+	void** newObjects = malloc(size*sizeof(void*));
+	if (newObjects==NULL){
 	#ifndef DNDEBUG
 	printf("CopyObjectArray: malloc failed in CopyObjectArray");
 	#endif
 		return NULL;
 	}
 	for (int i=0; i<size; i++){
-		newobjects[i]=objects[i];
+		newObjects[i]=objects[i];
 	}
-	return newobjects;
+	return newObjects;
 }
 
 
-IsraeliQueue IsraeliQueueCreate(FriendshipFunction* friendshipfunctions, ComparisonFunction compare, int friendship_th, int rivalry_th){
+IsraeliQueue IsraeliQueueCreate(FriendshipFunction* friendshipFunctions, ComparisonFunction compare, int friendshipThreshold, int rivalryThreshold){
 
-if (friendshipfunctions==NULL || compare==NULL){
+if (friendshipFunctions==NULL || compare==NULL){
 
 #ifndef DNDEBUG
-printf("IsraeliQueueCreate: friendshipfunctions or compare is NULL");
+printf("IsraeliQueueCreate: friendshipFunctions or compare is NULL");
 #endif
 
 	return NULL;
 
 }
-IsraeliQueue newqueue = malloc(sizeof(*newqueue));
-if (newqueue==NULL){
+IsraeliQueue newQueue = malloc(sizeof(*newQueue));
+if (newQueue==NULL){
 
 #ifndef DNDEBUG
 printf("IsraeliQueueCreate: malloc failed in IsraeliQueueCreate");
@@ -108,72 +108,72 @@ printf("IsraeliQueueCreate: malloc failed in IsraeliQueueCreate");
 
 	return NULL;
 }
-newqueue->friendship_th=friendship_th;
-newqueue->rivalry_th=rivalry_th;
-newqueue->friendshipfunctions=friendshipfunctions;
-newqueue->compare=compare;
-newqueue->updatedFriendshipfunction=false;
-newqueue->objects=malloc(sizeof(void*));
-if (newqueue->objects==NULL){
+newQueue->m_friendshipThreshold=friendshipThreshold;
+newQueue->m_rivalryThreshold=rivalryThreshold;
+newQueue->m_friendshipFunctions=friendshipFunctions;
+newQueue->m_compare=compare;
+newQueue->m_updatedFriendshipFunctions=false;
+newQueue->m_objects=malloc(sizeof(void*));
+if (newQueue->m_objects==NULL){
 	#ifndef DNDEBUG
 	printf("IsraeliQueueCreate: malloc failed in IsraeliQueueCreate");
 	#endif
-		free(newqueue);
+		free(newQueue);
 		return NULL;
 }
-newqueue->objects[0]=NULL;
-newqueue->size=1;
-newqueue->quotas=NULL;
-return newqueue;
+newQueue->m_objects[0]=NULL;
+newQueue->m_size=1;
+newQueue->m_quotas=NULL;
+return newQueue;
 
 }
 
-IsraeliQueue IsraeliQueueClone(IsraeliQueue q){
+IsraeliQueue IsraeliQueueClone(IsraeliQueue queue){
 	
-	if (q==NULL){
+	if (queue==NULL){
 	#ifndef DNDEBUG
-	printf("IsraeliQueueClone: q is NULL");
+	printf("IsraeliQueueClone: queue is NULL");
 	#endif
 
 	return NULL;
 	}
 
-	IsraeliQueue newqueue = malloc(sizeof(*newqueue));
-	if (newqueue==NULL){
+	IsraeliQueue newQueue = malloc(sizeof(*newQueue));
+	if (newQueue==NULL){
 	#ifndef DNDEBUG
 	printf("IsraeliQueueClone: malloc failed in IsraeliQueueClone");
 	#endif
 		return NULL;
 	}
 
-	newqueue->friendship_th=q->friendship_th;
-	newqueue->rivalry_th=q->rivalry_th;
-	newqueue->friendshipfunctions=q->friendshipfunctions;
-	newqueue->compare=q->compare;
-	newqueue->objects=CopyObjectArray(q->objects, q->size);
-	newqueue->quotas=CopyQuotas(q->quotas, q->size);
-	newqueue->size=q->size;
-	newqueue->updatedFriendshipfunction=q->updatedFriendshipfunction;
+	newQueue->m_friendshipThreshold=queue->m_friendshipThreshold;
+	newQueue->m_rivalryThreshold=queue->m_rivalryThreshold;
+	newQueue->m_friendshipFunctions=queue->m_friendshipFunctions;
+	newQueue->m_compare=queue->m_compare;
+	newQueue->m_objects=CopyObjectArray(queue->m_objects, queue->m_size);
+	newQueue->m_quotas=copyQuotas(queue->m_quotas, queue->m_size);
+	newQueue->m_size=queue->m_size;
+	newQueue->m_updatedFriendshipFunctions=queue->m_updatedFriendshipFunctions;
 
-	return newqueue;
+	return newQueue;
 }
 
 
-void IsraeliQueueDestroy(IsraeliQueue q){
-	if (q==NULL){
+void IsraeliQueueDestroy(IsraeliQueue queue){
+	if (queue==NULL){
 	#ifndef DNDEBUG
-	printf("IsraeliQueueDestroy: q is NULL");
+	printf("IsraeliQueueDestroy: queue is NULL");
 	#endif
 		return;
 	}
 
-	if (q->objects!=NULL){
-		free(q->objects);
+	if (queue->m_objects!=NULL){
+		free(queue->m_objects);
 	}
-	if (q->quotas!=NULL){
-		free(q->quotas);
+	if (queue->m_quotas!=NULL){
+		free(queue->m_quotas);
 	}
-		free(q);
+		free(queue);
 	return;
 }
 
@@ -181,10 +181,10 @@ void IsraeliQueueDestroy(IsraeliQueue q){
 
 
 
-IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue q, void* object){
-	if (q==NULL){
+IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue queue, void* object){
+	if (queue==NULL){
 	#ifndef DNDEBUG
-	printf("IsraeliQueueEnqueue: q is NULL");
+	printf("IsraeliQueueEnqueue: queue is NULL");
 	#endif
 		return ISRAELIQUEUE_BAD_PARAM;
 	}
@@ -197,21 +197,21 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue q, void* object){
 	}
 
 
-	int friend_location=UNINITIALIZED;
-	bool skipped_to_friend=false;
+	int friendLocation=UNINITIALIZED;
+	bool skippedToFriend=false;
 	bool blocked=false;
 
-	for (int i=0; i<((q->size)-1); i++){
-	friend_location=UNINITIALIZED;
-	skipped_to_friend=false;
+	for (int i=0; i<((queue->m_size)-1); i++){
+	friendLocation=UNINITIALIZED;
+	skippedToFriend=false;
 	blocked=false;
 
-		if(CheckRelation(q->friendshipfunctions, q->objects[i], object, q->friendship_th, q->rivalry_th)==FRIEND){
-			if (q->quotas[i].friendship_quota<FRIEND_QUOTA){
-				for(int j=i+1; j<((q->size)-1);  j++){
-					if (CheckRelation(q->friendshipfunctions, q->objects[j], object, q->friendship_th, q->rivalry_th)==RIVAL){
-						if (q->quotas[j].rivalry_quota<RIVAL_QUOTA){
-							q->quotas[j].rivalry_quota++;
+		if(checkRelation(queue->m_friendshipFunctions, queue->m_objects[i], object, queue->m_friendshipThreshold, queue->m_rivalryThreshold)==FRIEND){
+			if (queue->m_quotas[i].m_friendshipQuota<FRIEND_QUOTA){
+				for(int j=i+1; j<((queue->m_size)-1);  j++){
+					if (checkRelation(queue->m_friendshipFunctions, queue->m_objects[j], object, queue->m_friendshipThreshold, queue->m_rivalryThreshold)==RIVAL){
+						if (queue->m_quotas[j].m_rivalryQuota<RIVAL_QUOTA){
+							queue->m_quotas[j].m_rivalryQuota++;
 							i=j;
 							blocked=true; //j is the index of the current blocking rival
 							break;
@@ -219,9 +219,9 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue q, void* object){
 					}
 				}	
 					if (!blocked){
-					friend_location=i; //friend_location is the index of the first available friend who didn't exceed quota and cannot be blocked by a rival
-					skipped_to_friend=true;
-					q->quotas[friend_location].friendship_quota++;
+					friendLocation=i; //friendLocation is the index of the first available friend who didn't exceed quota and cannot be blocked by a rival
+					skippedToFriend=true;
+					queue->m_quotas[friendLocation].m_friendshipQuota++;
 					break;
 					}
 			}
@@ -232,83 +232,83 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue q, void* object){
 
 
 		
-	q->objects=realloc(q->objects, (q->size+1)*sizeof(void*));
-	if (q->objects==NULL){
+	queue->m_objects=realloc(queue->m_objects, (queue->m_size+1)*sizeof(void*));
+	if (queue->m_objects==NULL){
 	#ifndef DNDEBUG
 	printf("IsraeliQueueEnqueue: realloc failed in IsraeliQueueEnqueue");
 	#endif
 		return ISRAELIQUEUE_ALLOC_FAILED;
 	}
-	q->size+=1;
-	q->objects[q->size-1]=NULL;
+	queue->m_size+=1;
+	queue->m_objects[queue->m_size-1]=NULL;
 
-	q->quotas=realloc(q->quotas, (q->size+1)*sizeof(Quotas));
-	if (q->quotas==NULL){
+	queue->m_quotas=realloc(queue->m_quotas, (queue->m_size+1)*sizeof(Quota));
+	if (queue->m_quotas==NULL){
 	#ifndef DNDEBUG
 	printf("IsraeliQueueEnqueue: realloc failed in IsraeliQueueEnqueue");
 	#endif
 		return ISRAELIQUEUE_ALLOC_FAILED;
 	}
 
-	if (skipped_to_friend){
-		for (int i=q->size-1; i>friend_location; i--){
-			q->objects[i]=q->objects[i-1];
-			q->quotas[i]=q->quotas[i-1];
+	if (skippedToFriend){
+		for (int i=queue->m_size-1; i>friendLocation; i--){
+			queue->m_objects[i]=queue->m_objects[i-1];
+			queue->m_quotas[i]=queue->m_quotas[i-1];
 		}
-		q->objects[friend_location+1]=object;
-		q->quotas[friend_location+1].friendship_quota=0;
-		q->quotas[friend_location+1].rivalry_quota=0;
-		q->quotas[friend_location+1].object=object;
+		queue->m_objects[friendLocation+1]=object;
+		queue->m_quotas[friendLocation+1].m_friendshipQuota=0;
+		queue->m_quotas[friendLocation+1].m_rivalryQuota=0;
+		queue->m_quotas[friendLocation+1].m_object=object;
 	}
 	else{
-		q->objects[q->size-2]=object;
-		q->quotas[q->size-2].friendship_quota=0;
-		q->quotas[q->size-2].rivalry_quota=0;
-		q->quotas[q->size-2].object=object;
+		queue->m_objects[queue->m_size-2]=object;
+		queue->m_quotas[queue->m_size-2].m_friendshipQuota=0;
+		queue->m_quotas[queue->m_size-2].m_rivalryQuota=0;
+		queue->m_quotas[queue->m_size-2].m_object=object;
 	}
-		q->quotas[q->size-1].object=NULL;
+		queue->m_quotas[queue->m_size-1].m_object=NULL;
 	return ISRAELIQUEUE_SUCCESS;
 	}
 
 
 
-void* IsraeliQueueDequeue(IsraeliQueue q){
-	if (q==NULL){
+void* IsraeliQueueDequeue(IsraeliQueue queue){
+	if (queue==NULL){
 		#ifndef DNDEBUG
-		printf("IsraeliQueueDequeue: q is NULL");
+		printf("IsraeliQueueDequeue: queue is NULL");
 		#endif
 		return NULL;
 	}
 
-	if (q->objects[0]==NULL){
+	if (queue->m_objects[0]==NULL){
 		#ifndef DNDEBUG
-		printf("IsraeliQueueDequeue: q is empty");
+		printf("IsraeliQueueDequeue: queue is empty");
 		#endif
 		return NULL;
 	}
 
-	void* object=q->objects[0];
-	for (int i=0; i<q->size-1; i++){
-		q->objects[i]=q->objects[i+1];
-		q->quotas[i]=q->quotas[i+1];
+	void* object=queue->m_objects[0];
+	for (int i=0; i<queue->m_size-1; i++){
+		queue->m_objects[i]=queue->m_objects[i+1];
+		queue->m_quotas[i]=queue->m_quotas[i+1];
 	}
-	q->objects=realloc(q->objects, (q->size-1)*sizeof(void*));
-	if (q->objects==NULL){
+	queue->m_objects=realloc(queue->m_objects, (queue->m_size-1)*sizeof(void*));
+	if (queue->m_objects==NULL){
 		#ifndef DNDEBUG
 		printf("IsraeliQueueDequeue: realloc failed in IsraeliQueueDequeue");
 		#endif
 		return NULL;
 	}
-	q->size-=1;
+	queue->m_size-=1;
 	return object;
 
 }
 
 
-bool IsraeliQueueContains(IsraeliQueue q, void * object){
-	if (q==NULL){
+bool IsraeliQueueContains(IsraeliQueue queue, void * object){
+	if (queue==NULL){
 		#ifndef DNDEBUG
-		printf("IsraeliQueueContains: q is NULL");
+		printf("IsraeliQueueContains: queue is NULL");
 		#endif
 		return false;
 	}
@@ -320,8 +320,8 @@ bool IsraeliQueueContains(IsraeliQueue q, void * object){
 		return false;
 	}
 
-	for (int i=0; i<q->size-1; i++){
-		if (q->objects[i]==object){
+	for (int i=0; i<queue->m_size-1; i++){
+		if (queue->m_objects[i]==object){
 			return true;
 		}
 	}
@@ -330,21 +330,21 @@ bool IsraeliQueueContains(IsraeliQueue q, void * object){
 
 }
 
-IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue q, FriendshipFunction new_friendship_function) {
-    if (q == NULL || new_friendship_function == NULL) {
+IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue queue, FriendshipFunction newFriendshipFunction) {
+    if (queue == NULL || newFriendshipFunction == NULL) {
         #ifndef DNDEBUG
-        printf("IsraeliQueueAddFriendshipMeasure: q or new_friendship_function is NULL");
+        printf("IsraeliQueueAddFriendshipMeasure: queue or newFriendshipFunction is NULL");
         #endif
         return ISRAELIQUEUE_BAD_PARAM;
     }
 
     int count = 0;
-    while (q->friendshipfunctions[count] != NULL) {
+    while (queue->m_friendshipFunctions[count] != NULL) {
         count++;
     }
 
-    FriendshipFunction *new_array = malloc((count + 2) * sizeof(FriendshipFunction));
-    if (new_array == NULL) {
+    FriendshipFunction *newArray = malloc((count + 2) * sizeof(FriendshipFunction));
+    if (newArray == NULL) {
         #ifndef DNDEBUG
         printf("IsraeliQueueAddFriendshipMeasure: malloc failed");
         #endif
@@ -352,93 +352,93 @@ IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue q, FriendshipFun
     }
 
     for (int i = 0; i < count; i++) {
-        new_array[i] = q->friendshipfunctions[i];
+        newArray[i] = queue->m_friendshipFunctions[i];
     }
 
-    new_array[count] = new_friendship_function;
+    newArray[count] = newFriendshipFunction;
 
-    new_array[count + 1] = NULL;
-	if (q->updatedFriendshipfunction==true){
-    free(q->friendshipfunctions);
+    newArray[count + 1] = NULL;
+	if (queue->m_updatedFriendshipFunctions==true){
+    free(queue->m_friendshipFunctions);
 	}
-    q->friendshipfunctions = new_array;
-	q->updatedFriendshipfunction=true;
+    queue->m_friendshipFunctions = newArray;
+	queue->m_updatedFriendshipFunctions=true;
 
     return ISRAELIQUEUE_SUCCESS;
 }
 
-IsraeliQueueError IsraeliQueueUpdateFriendshipThreshold(IsraeliQueue q, int new_threshold){
-	if (q==NULL){
+IsraeliQueueError IsraeliQueueUpdateFriendshipThreshold(IsraeliQueue queue, int newThreshold){
+	if (queue==NULL){
 		#ifndef DNDEBUG
-		printf("IsraeliQueueUpdateFriendshipThreshold: q is NULL");
+		printf("IsraeliQueueUpdateFriendshipThreshold: queue is NULL");
 		#endif
 		return ISRAELIQUEUE_BAD_PARAM;
 	}
 
-	q->friendship_th=new_threshold;
+	queue->m_friendshipThreshold=newThreshold;
 	return ISRAELIQUEUE_SUCCESS;
 }
 
-IsraeliQueueError IsraeliQueueUpdateRivalryThreshold(IsraeliQueue q, int new_threshold){
-	if (q==NULL){
+IsraeliQueueError IsraeliQueueUpdateRivalryThreshold(IsraeliQueue queue, int newThreshold){
+	if (queue==NULL){
 		#ifndef DNDEBUG
-		printf("IsraeliQueueUpdateRivalryThreshold: q is NULL");
+		printf("IsraeliQueueUpdateRivalryThreshold: queue is NULL");
 		#endif
 		return ISRAELIQUEUE_BAD_PARAM;
 	}
 
-	q->rivalry_th=new_threshold;
+	queue->m_rivalryThreshold=newThreshold;
 	return ISRAELIQUEUE_SUCCESS;
 
 }
 
-int IsraeliQueueSize(IsraeliQueue q){
-	if (q==NULL){
+int IsraeliQueueSize(IsraeliQueue queue){
+	if (queue==NULL){
 		#ifndef DNDEBUG
-		printf("IsraeliQueueSize: q is NULL");
+		printf("IsraeliQueueSize: queue is NULL");
 		#endif
 		return 0;
 	}
 
-	return q->size-1;
+	return queue->m_size-1;
 }
-void* IsraeliQueueDequeueAtIndex(IsraeliQueue q, int index){
-	if (q == NULL){
+void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index){
+	if (queue == NULL){
 		#ifndef DNDEBUG
-		printf("IsraeliQueueDequeueAtIndex: q is NULL");
+		printf("IsraeliQueueDequeueAtIndex: queue is NULL");
 		#endif
 		return NULL;
 	}
-	if (index < 0 || index >= q->size - 1){
+	if (index < 0 || index >= queue->m_size - 1){
 		#ifndef DNDEBUG
 		printf("IsraeliQueueDequeueAtIndex: invalid index");
 		#endif
 		return NULL;
 	}
-	void* object = q->objects[index];
-	for (int i = index; i < q->size - 1; i++){
-		q->objects[i] = q->objects[i + 1];
-		q->quotas[i] = q->quotas[i + 1];
+	void* object = queue->m_objects[index];
+	for (int i = index; i < queue->m_size - 1; i++){
+		queue->m_objects[i] = queue->m_objects[i + 1];
+		queue->m_quotas[i] = queue->m_quotas[i + 1];
 	}
-	void** temp_objects = realloc(q->objects, (q->size - 1) * sizeof(void*));
-	if (temp_objects == NULL){
+	void** tempObjects = realloc(queue->m_objects, (queue->m_size - 1) * sizeof(void*));
+	if (tempObjects == NULL){
 		#ifndef DNDEBUG
 		printf("IsraeliQueueDequeueAtIndex: realloc failed in IsraeliQueueDequeueAtIndex");
 		#endif
 		return NULL;
 	}
-	q->objects = temp_objects;
-	q->size -= 1;
+	queue->m_objects = tempObjects;
+	queue->m_size -= 1;
 	return object;
 }
 
 
 
 
-int FindIsraeliQueueObject(IsraeliQueue q, void* object){
-	if (q==NULL){
+int FindIsraeliQueueObject(IsraeliQueue queue, void* object){
+	if (queue==NULL){
 		#ifndef DNDEBUG
-		printf("IsraeliQueueFindObject: q is NULL");
+		printf("IsraeliQueueFindObject: queue is NULL");
 		#endif
 		return CANNOT_FIND;
 	}
@@ -450,8 +450,8 @@ int FindIsraeliQueueObject(IsraeliQueue q, void* object){
 		return CANNOT_FIND;
 	}
 
-	for (int i=0; i<q->size-1; i++){
-		if (q->objects[i]==object){
+	for (int i=0; i<queue->m_size-1; i++){
+		if (queue->m_objects[i]==object){
 			return i;
 		}
 	}
@@ -459,16 +459,16 @@ int FindIsraeliQueueObject(IsraeliQueue q, void* object){
 }
 
 
-IsraeliQueueError IsraeliQueueImprovePosition(IsraeliQueue q){
-    if (q==NULL){
+IsraeliQueueError IsraeliQueueImprovePosition(IsraeliQueue queue){
+    if (queue==NULL){
         #ifndef DNDEBUG
-        printf("IsraeliQueueImprovePosition: q is NULL");
+        printf("IsraeliQueueImprovePosition: queue is NULL");
         #endif
         return ISRAELIQUEUE_BAD_PARAM;
     }
 
     // An array to keep track of the dequeued elements
-    void** dequeuedElements = malloc(q->size * sizeof(void*));
+    void** dequeuedElements = malloc(queue->m_size * sizeof(void*));
     if (dequeuedElements == NULL){
         #ifndef DNDEBUG
         printf("IsraeliQueueImprovePosition: malloc failed");
@@ -476,77 +476,77 @@ IsraeliQueueError IsraeliQueueImprovePosition(IsraeliQueue q){
         return ISRAELIQUEUE_ALLOC_FAILED;
     }
     int dequeuedCount = 0;
-	Quotas currentQuota=q->quotas[q->size-2];
-    for (int i = q->size - 2; i >= 0; i--) {
-		currentQuota=q->quotas[i];
+	Quota currentQuota=queue->m_quotas[queue->m_size-2];
+    for (int i = queue->m_size - 2; i >= 0; i--) {
+		currentQuota=queue->m_quotas[i];
         bool alreadyProcessed = false;
         // Check if the current element has been already dequeued and enqueued again
         for (int j = 0; j < dequeuedCount; j++) {
-            if (q->objects[i] == dequeuedElements[j]) {
+            if (queue->m_objects[i] == dequeuedElements[j]) {
                 alreadyProcessed = true;
                 break;
             }
         }
         // If the element has not been dequeued yet, dequeue and enqueue it again
         if (!alreadyProcessed) {
-            void* object = IsraeliQueueDequeueAtIndex(q, i);
+            void* object = IsraeliQueueDequeueAtIndex(queue, i);
             if (object == NULL) {
                 free(dequeuedElements);
                 return ISRAELI_QUEUE_ERROR;
             }
             dequeuedElements[dequeuedCount++] = object;
-            IsraeliQueueEnqueue(q, object);
-			int k=FindIsraeliQueueObject(q, object);
+            IsraeliQueueEnqueue(queue, object);
+			int k=FindIsraeliQueueObject(queue, object);
 			if (k==CANNOT_FIND){
 				#ifndef DNDEBUG
 				printf("IsraeliQueueImprovePosition: IsraeliQueueFindObject failed");
 				#endif
 				return ISRAELI_QUEUE_ERROR;
         	}
-			q->quotas[k]=currentQuota;
+			queue->m_quotas[k]=currentQuota;
 		}
     }
     free(dequeuedElements);
     return ISRAELIQUEUE_SUCCESS;
 }
-
-IsraeliQueue IsraeliQueueMerge(IsraeliQueue* q_arr, ComparisonFunction compare){
+/*
+IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArray, ComparisonFunction compare){
 	int count=0;
-	while (q_arr[count]!=NULL){
+	while (queueArray[count]!=NULL){
 		count++;
 	}
-	
-}
 
+}
+ */
 
 
 //test 3
 
 int arr[]={7,6,5,4,3,2,1};
 
-int MockFriendshipFunction(void* object1, void* object2){// 8 and 5
-	if ((*(int*)object1==7 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==7)){
+int MockFriendshipFunction(void* firstObject, void* secondObject){// 8 and 5
+	if ((*(int*)firstObject==7 && *(int*)secondObject==8) || (*(int*)firstObject==8 && *(int*)secondObject==7)){
 		return 9;
 	}
 
-	if ((*(int*)object1==6 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==6)){
+	if ((*(int*)firstObject==6 && *(int*)secondObject==8) || (*(int*)firstObject==8 && *(int*)secondObject==6)){
 		return 4;
 	}
-	if ((*(int*)object1==5 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==5)){
-		return 4;
-	}
-
-	if ((*(int*)object1==4 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==4)){
-		return 9;
-	}
-	if ((*(int*)object1==3 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==3)){
+	if ((*(int*)firstObject==5 && *(int*)secondObject==8) || (*(int*)firstObject==8 && *(int*)secondObject==5)){
 		return 4;
 	}
 
-	if ((*(int*)object1==2 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==2)){
+	if ((*(int*)firstObject==4 && *(int*)secondObject==8) || (*(int*)firstObject==8 && *(int*)secondObject==4)){
 		return 9;
 	}
-	if ((*(int*)object1==1 && *(int*)object2==8) || (*(int*)object1==8 && *(int*)object2==1)){
+	if ((*(int*)firstObject==3 && *(int*)secondObject==8) || (*(int*)firstObject==8 && *(int*)secondObject==3)){
+		return 4;
+	}
+
+	if ((*(int*)firstObject==2 && *(int*)secondObject==8) || (*(int*)firstObject==8 && *(int*)secondObject==2)){
+		return 9;
+	}
+	if ((*(int*)firstObject==1 && *(int*)secondObject==8) || (*(int*)firstObject==8 && *(int*)secondObject==1)){
 		return 9;
 	}
 
@@ -562,20 +562,20 @@ int comparison_function_mock(void *obj1, void *obj2) {
     return id1 - id2;
 }
 
-FriendshipFunction friendshipfunctions[]={NULL};
+FriendshipFunction friendshipFunctions[]={NULL};
 
 int eight_value = 8;
 int *eight = &eight_value;
 
-void PrintIsraeliQueue(IsraeliQueue q) {
-    if (q == NULL) {
+void PrintIsraeliQueue(IsraeliQueue queue) {
+    if (queue == NULL) {
         printf("Invalid queue.\n");
         return;
     }
 
     printf("IsraeliQueue content:\n");
-    for (int i = 0; i < q->size - 1; i++) {
-        printf("%d ", *((int *)q->objects[i]));
+    for (int i = 0; i < queue->m_size - 1; i++) {
+        printf("%d ", *((int *)queue->m_objects[i]));
     }
     printf("\n");
 }
@@ -585,20 +585,20 @@ void Test3(){
 	
 
 
-	IsraeliQueue q=IsraeliQueueCreate(friendshipfunctions, comparison_function_mock, 8, 5);
+	IsraeliQueue queue=IsraeliQueueCreate(friendshipFunctions, comparison_function_mock, 8, 5);
 
-	IsraeliQueueAddFriendshipMeasure(q,MockFriendshipFunction);
-	IsraeliQueueAddFriendshipMeasure(q, MockFriendshipFunction);
+	IsraeliQueueAddFriendshipMeasure(queue,MockFriendshipFunction);
+	IsraeliQueueAddFriendshipMeasure(queue, MockFriendshipFunction);
 	
 	for (int i=0; i<7; i++){
-		IsraeliQueueEnqueue(q, &arr[i]);
+		IsraeliQueueEnqueue(queue, &arr[i]);
 	}
-	IsraeliQueueEnqueue(q, eight);
-	IsraeliQueue p=IsraeliQueueClone(q);
+	IsraeliQueueEnqueue(queue, eight);
+	IsraeliQueue p=IsraeliQueueClone(queue);
 
-	int* out=(int*)IsraeliQueueDequeue(q);
+	int* out=(int*)IsraeliQueueDequeue(queue);
 	PrintIsraeliQueue(p);
-	PrintIsraeliQueue(q);
+	PrintIsraeliQueue(queue);
 	printf("out is %d", *out);
 	for (int i=0; i<7; i++){
 		if (IsraeliQueueContains(p, &arr[i])!=true){
@@ -610,16 +610,16 @@ void Test3(){
 	}
 
 	for (int i=1; i<7; i++){
-		if (IsraeliQueueContains(q, &arr[i])!=true){
-		printf("IsraeliQueueContains failed on q, doesn't contain %d\n", arr[i]);
+		if (IsraeliQueueContains(queue, &arr[i])!=true){
+		printf("IsraeliQueueContains failed on queue, doesn't contain %d\n", arr[i]);
 		}	
 	}
-	if(IsraeliQueueContains(q, eight)!=true){
-		printf("IsraeliQueueContains failed on q, doesn't contains 8\n");	
+	if(IsraeliQueueContains(queue, eight)!=true){
+		printf("IsraeliQueueContains failed on queue, doesn't contains 8\n");	
 	}
 
-	IsraeliQueueAddFriendshipMeasure(q, MockFriendshipFunction);
-	IsraeliQueueAddFriendshipMeasure(q, MockFriendshipFunction);
+	IsraeliQueueAddFriendshipMeasure(queue, MockFriendshipFunction);
+	IsraeliQueueAddFriendshipMeasure(queue, MockFriendshipFunction);
 }
 
 int main(){
@@ -627,9 +627,9 @@ int main(){
 	return 0;
 }
 
-/*
-//test 2
 
+//test 2
+/*
 
 typedef struct {
     int age;
@@ -638,18 +638,18 @@ typedef struct {
 } Person;
 
 // A friendship function based on age difference
-int AgeDifferenceFriendship(void* object1, void* object2) {
-    Person* person1 = (Person*)object1;
-    Person* person2 = (Person*)object2;
+int AgeDifferenceFriendship(void* firstObject, void* secondObject) {
+    Person* person1 = (Person*)firstObject;
+    Person* person2 = (Person*)secondObject;
 
     int age_difference = abs(person1->age - person2->age);
     return 100 - age_difference * 2;
 }
 
 // A friendship function based on shared hobbies
-int SharedHobbiesFriendship(void* object1, void* object2) {
-    Person* person1 = (Person*)object1;
-    Person* person2 = (Person*)object2;
+int SharedHobbiesFriendship(void* firstObject, void* secondObject) {
+    Person* person1 = (Person*)firstObject;
+    Person* person2 = (Person*)secondObject;
 
     int shared_hobbies = 0;
     for (int i = 0; i < 5; i++) {
@@ -671,27 +671,27 @@ void Test_CheckRelation() {
 
     FriendshipFunction friendship_functions[] = {AgeDifferenceFriendship, SharedHobbiesFriendship, NULL};
 
-    int friendship_threshold = 85;
-    int rivalry_threshold = 60;
+    int friendshipThresholdreshold = 85;
+    int rivalryThresholdreshold = 60;
 
-    Relation result = CheckRelation(friendship_functions, &alice, &bob, friendship_threshold, rivalry_threshold);
+    Relation result = checkRelation(friendship_functions, &alice, &bob, friendshipThresholdreshold, rivalryThresholdreshold);
     printf("Test 1: Alice and Bob - Result: %s, Expected: FRIEND\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
 
 
-    result = CheckRelation(friendship_functions, &alice, &charlie, friendship_threshold, rivalry_threshold);
+    result = checkRelation(friendship_functions, &alice, &charlie, friendshipThresholdreshold, rivalryThresholdreshold);
     printf("Test 2: Alice and Charlie - Result: %s, Expected: RIVAL\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
 
 
-    result = CheckRelation(friendship_functions, &alice, &dave, friendship_threshold, rivalry_threshold);
+    result = checkRelation(friendship_functions, &alice, &dave, friendshipThresholdreshold, rivalryThresholdreshold);
     printf("Test 3: Alice and Dave - Result: %s, Expected: FRIEND\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
 
-    result = CheckRelation(friendship_functions, &bob, &charlie, friendship_threshold, rivalry_threshold);
+    result = checkRelation(friendship_functions, &bob, &charlie, friendshipThresholdreshold, rivalryThresholdreshold);
     printf("Test 4: Bob and Charlie - Result: %s, Expected: NEUTRAL\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
 
-    result = CheckRelation(friendship_functions, &bob, &dave, friendship_threshold, rivalry_threshold);
+    result = checkRelation(friendship_functions, &bob, &dave, friendshipThresholdreshold, rivalryThresholdreshold);
     printf("Test 5: Bob and Dave - Result: %s, Expected: FRIEND\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
 
-    result = CheckRelation(friendship_functions, &charlie, &dave, friendship_threshold, rivalry_threshold);
+    result = checkRelation(friendship_functions, &charlie, &dave, friendshipThresholdreshold, rivalryThresholdreshold);
     printf("Test 6: Charlie and Dave - Result: %s, Expected: RIVAL\n", result == FRIEND ? "FRIEND" : (result == RIVAL ? "RIVAL" : "NEUTRAL"));
 }
 
@@ -701,7 +701,7 @@ int main() {
 }
 
 	
- test 1
+ //test 1
 
 // Mock FriendshipFunction implementation
 int friendship_function_mock(void *obj1, void *obj2) {
@@ -726,9 +726,9 @@ int comparison_function_mock(void *obj1, void *obj2) {
     FriendshipFunction friendship_functions[] = {friendship_function_mock, NULL};
 
     // Create a new IsraeliQueue
-    IsraeliQueue q = IsraeliQueueCreate(friendship_functions, comparison_function_mock, 2, 3);
+    IsraeliQueue queue = IsraeliQueueCreate(friendship_functions, comparison_function_mock, 2, 3);
 
-    if (!q) {
+    if (!queue) {
         printf("Error: Failed to create IsraeliQueue\n");
         return 1;
     }
@@ -737,7 +737,7 @@ int comparison_function_mock(void *obj1, void *obj2) {
     for (int i = 0; i < 5; i++) {
         int *new_object = malloc(sizeof(int));
         *new_object = i;
-        IsraeliQueueError err = IsraeliQueueEnqueue(q, new_object);
+        IsraeliQueueError err = IsraeliQueueEnqueue(queue, new_object);
 
         if (err != ISRAELIQUEUE_SUCCESS) {
             printf("Error: Failed to enqueue object %d\n", i);
@@ -747,13 +747,13 @@ int comparison_function_mock(void *obj1, void *obj2) {
 
     // Display the queue
     printf("Queue after enqueuing objects:\n");
-    for (int i = 0; i < q->size; i++) {
-        int *obj = (int *)q->objects[i];
-        printf("Object ID: %d, Friendship Quota: %d, Rivalry Quota: %d\n", *obj, q->quotas[i].friendship_quota, q->quotas[i].rivalry_quota);
+    for (int i = 0; i < queue->m_size; i++) {
+        int *obj = (int *)queue->m_objects[i];
+        printf("Object ID: %d, Friendship Quota: %d, Rivalry Quota: %d\n", *obj, queue->m_quotas[i].m_friendshipQuota, queue->m_quotas[i].m_rivalryQuota);
     }
 
     // Clone the queue
-    IsraeliQueue cloned_q = IsraeliQueueClone(q);
+    IsraeliQueue cloned_q = IsraeliQueueClone(queue);
 
     if (!cloned_q) {
         printf("Error: Failed to clone IsraeliQueue\n");
@@ -762,17 +762,17 @@ int comparison_function_mock(void *obj1, void *obj2) {
 
     // Display the cloned queue
     printf("\nCloned queue:\n");
-    for (int i = 0; i < cloned_q->size; i++) {
-        int *obj = (int *)cloned_q->objects[i];
-        printf("Object ID: %d, Friendship Quota: %d, Rivalry Quota: %d\n", *obj, cloned_q->quotas[i].friendship_quota, cloned_q->quotas[i].rivalry_quota);
+    for (int i = 0; i < cloned_q->m_size; i++) {
+        int *obj = (int *)cloned_q->m_objects[i];
+        printf("Object ID: %d, Friendship Quota: %d, Rivalry Quota: %d\n", *obj, cloned_q->m_quotas[i].m_friendshipQuota, cloned_q->m_quotas[i].m_rivalryQuota);
     }
 
     // Cleanup
-    for (int i = 0; i < q->size; i++) {
-        free(q->objects[i]);
+    for (int i = 0; i < queue->m_size; i++) {
+        free(queue->m_objects[i]);
     }
 
-    IsraeliQueueDestroy(q);
+    IsraeliQueueDestroy(queue);
     IsraeliQueueDestroy(cloned_q);
 
     return 0;
