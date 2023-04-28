@@ -3,6 +3,8 @@
 #include "IsraeliQueue.h"
 #include <assert.h>
 #include <string.h>
+#include <math.h>
+
 #define UNINITIALIZED -1
 #define CANNOT_FIND -2
 
@@ -457,54 +459,6 @@ int FindIsraeliQueueObject(IsraeliQueue q, void* object){
 }
 
 
-
-
-IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue q){
-	if (q==NULL){
-		#ifndef DNDEBUG
-		printf("IsraeliQueueImprovePositions: q is NULL");
-		#endif
-		return ISRAELIQUEUE_BAD_PARAM;
-	}
-		
-	typedef struct {
-		void * object;
-		bool dequeued;
-	} Dequeued;
-	
-	Dequeued* dequeued=malloc((q->size-1)*sizeof(Dequeued));
-	if (dequeued==NULL){
-		#ifndef DNDEBUG
-		printf("IsraeliQueueImprovePositions: malloc failed");
-		#endif
-		return ISRAELIQUEUE_ALLOC_FAILED;
-	}
-	for (int i=0; i<q->size-1; i++){
-		dequeued[i].object=q->objects[i];
-		dequeued[i].dequeued=false;
-	}
-
-	void* currentElement=DequeueLastElement(q);
-	Quotas currentQuotas=q->quotas[q->size-2];
-	currentQuotas.object=currentElement;
-	if(IsraeliQueueEnqueue(q, currentElement)!=ISRAELIQUEUE_SUCCESS){
-		#ifndef DNDEBUG
-		printf("IsraeliQueueImprovePositions: IsraeliQueueEnqueue failed");
-		#endif
-		return ISRAELIQUEUE_BAD_PARAM;
-	}
-	int i=FindIsraeliQueueObject(q, currentElement);
-	if (i==CANNOT_FIND){
-		#ifndef DNDEBUG
-		printf("IsraeliQueueImprovePositions: IsraeliQueueFindObject failed");
-		#endif
-		return ISRAELI_QUEUE_ERROR;
-	}
-
-
-	return ISRAELIQUEUE_SUCCESS;
-}
-
 IsraeliQueueError IsraeliQueueImprovePosition(IsraeliQueue q){
     if (q==NULL){
         #ifndef DNDEBUG
@@ -522,8 +476,9 @@ IsraeliQueueError IsraeliQueueImprovePosition(IsraeliQueue q){
         return ISRAELIQUEUE_ALLOC_FAILED;
     }
     int dequeuedCount = 0;
-
+	Quotas currentQuota=q->quotas[q->size-2];
     for (int i = q->size - 2; i >= 0; i--) {
+		currentQuota=q->quotas[i];
         bool alreadyProcessed = false;
         // Check if the current element has been already dequeued and enqueued again
         for (int j = 0; j < dequeuedCount; j++) {
@@ -541,12 +496,27 @@ IsraeliQueueError IsraeliQueueImprovePosition(IsraeliQueue q){
             }
             dequeuedElements[dequeuedCount++] = object;
             IsraeliQueueEnqueue(q, object);
-        }
+			int k=FindIsraeliQueueObject(q, object);
+			if (k==CANNOT_FIND){
+				#ifndef DNDEBUG
+				printf("IsraeliQueueImprovePosition: IsraeliQueueFindObject failed");
+				#endif
+				return ISRAELI_QUEUE_ERROR;
+        	}
+			q->quotas[k]=currentQuota;
+		}
     }
     free(dequeuedElements);
     return ISRAELIQUEUE_SUCCESS;
 }
 
+IsraeliQueue IsraeliQueueMerge(IsraeliQueue* q_arr, ComparisonFunction compare){
+	int count=0;
+	while (q_arr[count]!=NULL){
+		count++;
+	}
+	
+}
 
 
 
