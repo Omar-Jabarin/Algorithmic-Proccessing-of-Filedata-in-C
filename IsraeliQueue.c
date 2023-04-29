@@ -87,6 +87,7 @@ void** CopyObjectArray(void** objects, int size){
 	return newObjects;
 }
 
+
 IsraeliQueue IsraeliQueueCreate(FriendshipFunction *friendshipFunctions, ComparisonFunction compare, int friendshipThreshold, int rivalryThreshold)
 {
 
@@ -445,7 +446,7 @@ int FindIsraeliQueueObject(IsraeliQueue queue, void* object){
 }
 
 
-IsraeliQueueError IsraeliQueueImprovePosition(IsraeliQueue queue){
+IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
     if (queue==NULL){
         #ifndef DNDEBUG
         printf("IsraeliQueueImprovePosition: queue is NULL");
@@ -529,23 +530,59 @@ FriendshipFunction* getAllFriendshipFunctions(IsraeliQueue* queues) {
     return result;
 }
 
-/*
+
 IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArray, ComparisonFunction compare){
-	int count=0;
-	int sizeOfNewQueue=0;
-	int sumOfFriendshipThresholds=0;
-	int productOfRivalryThresholds=1;
+	if (queueArray==NULL || compare==NULL || *queueArray==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueMerge: queueArray or compare is NULL");
+		#endif
+		return NULL;
+	}
+	int count=0, sizeOfNewQueue=0;
+	int sumOfFriendshipThresholds=0, productOfRivalryThresholds=1;
 	while (queueArray[count]!=NULL){
 		sizeOfNewQueue+=(queueArray[count]->m_size-1);
 		sumOfFriendshipThresholds+=queueArray[count]->m_friendshipThreshold;
 		productOfRivalryThresholds*=queueArray[count]->m_rivalryThreshold;
-
 		count++;
 	}
 	sizeOfNewQueue+=1;
- 
-}
-*/ 
+	FriendshipFunction* friendshipFunctions=getAllFriendshipFunctions(queueArray);
+	int averageFriendship=(int)ceil((double)sumOfFriendshipThresholds/count);
+	int geometricMeanOfRivalry=(int)ceil(pow((double)productOfRivalryThresholds, 1.0/count));
+	IsraeliQueue result=IsraeliQueueCreate(friendshipFunctions, compare, averageFriendship, geometricMeanOfRivalry);
+	if (result==NULL){
+		#ifndef DNDEBUG
+		printf("IsraeliQueueMerge: IsraeliQueueCreate failed");
+		#endif
+		return result;
+	}
+	int temp=sizeOfNewQueue-1;
+	void *currentObject;
+	while (temp>0){
+		for (int i=0; i<count; i++){
+			if (queueArray[i]->m_size>1){
+				currentObject=IsraeliQueueDequeue(queueArray[i]);
+				if (currentObject==NULL){
+					#ifndef DNDEBUG
+					printf("IsraeliQueueMerge: IsraeliQueueDequeue failed");
+					#endif
+					return NULL;
+				}
+				if(IsraeliQueueEnqueue(result, currentObject)!=ISRAELIQUEUE_SUCCESS){
+					#ifndef DNDEBUG
+					printf("IsraeliQueueMerge: IsraeliQueueEnqueue failed");
+					#endif
+					return NULL;
+				}
+			}
+				temp--;
+			
+		}
+	}
+	result->m_objects[sizeOfNewQueue-1]=NULL;
+	return result;
+} 
 
 //test 3
 
@@ -626,7 +663,7 @@ void Test3(){
 	int* out=(int*)IsraeliQueueDequeue(queue);
 	PrintIsraeliQueue(p);
 	PrintIsraeliQueue(queue);
-	printf("out is %d", *out);
+	printf("out is %d\n", *out);
 	for (int i=0; i<7; i++){
 		if (IsraeliQueueContains(p, &arr[i])!=true){
 		printf("IsraeliQueueContains failed on p, doesn't contain %d\n", arr[i]);	
@@ -650,6 +687,9 @@ void Test3(){
 	IsraeliQueue queues_arr[]={queue, p, NULL};
 	FriendshipFunction* functions=getAllFriendshipFunctions(queues_arr);
 	printf("functions[0] is %d\n", functions[0](eight, &arr[0]));
+	IsraeliQueue g=IsraeliQueueMerge(queues_arr, comparison_function_mock);
+	IsraeliQueueImprovePositions(g);
+	PrintIsraeliQueue(g);
 }
 
 int main(){
