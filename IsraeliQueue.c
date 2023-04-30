@@ -614,8 +614,9 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArray, ComparisonFunction comp
 					#endif
 					return NULL;
 				}
-			}
 				temp--;
+			}
+				
 		}
 	}
 	result->m_objects[sizeOfNewQueue-1]=NULL;
@@ -632,8 +633,10 @@ int comparison_function_mock(void *obj1, void *obj2) {
     return id1 - id2;
 }
 int mockfriendshipfunction(void* firstObject, void* secondObject){
-	return 50;
+	int temp = (*(int*)firstObject)+(*(int*)firstObject)+5;
+	return temp;
 }
+
 void PrintIsraeliQueue(IsraeliQueue queue) {
     if (queue == NULL) {
         printf("Invalid queue.\n");
@@ -651,14 +654,34 @@ void PrintIsraeliQueue(IsraeliQueue queue) {
 int main(){
 	int arr[]={1,2,3,4};
 	FriendshipFunction functions[]={mockfriendshipfunction, NULL};
-	IsraeliQueue queue=IsraeliQueueCreate(functions, comparison_function_mock, 0, 0);
+	IsraeliQueue queue=IsraeliQueueCreate(functions, comparison_function_mock, 100, 0);
 	for (int i=0; i<4; i++){
 		IsraeliQueueEnqueue(queue, &arr[i]);
 		
 	}
-	IsraeliQueueImprovePositions(queue);
-	PrintIsraeliQueue(queue);
+	IsraeliQueueAddFriendshipMeasure(queue, mockfriendshipfunction);
+	IsraeliQueue p=IsraeliQueueClone(queue);
+	IsraeliQueue j=IsraeliQueueClone(queue);
+	IsraeliQueue m=IsraeliQueueClone(queue);
+	IsraeliQueue s=IsraeliQueueClone(queue);
+	IsraeliQueueDequeue(p);
+	IsraeliQueueDequeue(p);
+	IsraeliQueueDequeue(j);
+	IsraeliQueueDequeue(j);
+	IsraeliQueueDequeue(j);
+	IsraeliQueueDequeue(m);
 
+	IsraeliQueueImprovePositions(queue);
+	
+	IsraeliQueue f[]={queue, p, j, m, s , NULL};
+	IsraeliQueue g=IsraeliQueueMerge(f, comparison_function_mock);
+	PrintIsraeliQueue(queue);
+	PrintIsraeliQueue(p);
+	IsraeliQueueDestroy(queue);
+	PrintIsraeliQueue(g);
+	
+
+	return 0;
 }
 
 //test 3
