@@ -7,6 +7,7 @@
 
 #define UNINITIALIZED -1
 #define CANNOT_FIND -2
+#define ENQUEUE_FAILED -3
 
 typedef enum { FRIEND, RIVAL, NEUTRAL } Relation;
 
@@ -14,8 +15,28 @@ typedef struct{
 	int m_friendshipQuota;
 	int m_rivalryQuota;
 	void* m_object;
+	bool improved;
 } Quota;
 
+FriendshipFunction* copyFriendshipFunctions(FriendshipFunction* friendshipFunctions){
+	int size=0;
+	while (friendshipFunctions[size]!=NULL){
+		size++;
+	}
+	FriendshipFunction* newFriendshipFunctions = malloc((size+1)*sizeof(FriendshipFunction));
+	if (newFriendshipFunctions==NULL){
+	#ifndef DNDEBUG
+	printf("copyFriendshipFunctions: malloc failed in copyFriendshipFunctions");
+	#endif
+		return NULL;
+	}
+	for (int i=0; i<size; i++){
+		newFriendshipFunctions[i]=friendshipFunctions[i];
+	}
+	newFriendshipFunctions[size]=NULL;
+	return newFriendshipFunctions;
+
+}
 Quota* copyQuotas(Quota* quotas, int size){
 	Quota* newQuotas = malloc(size*sizeof(Quota));
 	if (newQuotas==NULL){
@@ -145,12 +166,12 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue queue){
 	}
 	newQueue->m_friendshipThreshold=queue->m_friendshipThreshold;
 	newQueue->m_rivalryThreshold=queue->m_rivalryThreshold;
-	newQueue->m_friendshipFunctions=queue->m_friendshipFunctions;
+	newQueue->m_friendshipFunctions=copyFriendshipFunctions(queue->m_friendshipFunctions);
 	newQueue->m_compare=queue->m_compare;
 	newQueue->m_objects=copyObjectArray(queue->m_objects, queue->m_size);
 	newQueue->m_quotas=copyQuotas(queue->m_quotas, queue->m_size);
 	newQueue->m_size=queue->m_size;
-	newQueue->m_updatedFriendshipFunctions=queue->m_updatedFriendshipFunctions;
+	newQueue->m_updatedFriendshipFunctions=true;
 	return newQueue;
 }
 
@@ -168,6 +189,9 @@ void IsraeliQueueDestroy(IsraeliQueue queue){
 	}
 	if (queue->m_quotas!=NULL){
 		free(queue->m_quotas);
+	}
+	if (queue->m_updatedFriendshipFunctions){
+		free(queue->m_friendshipFunctions);
 	}
 		free(queue);
 	return;
@@ -206,7 +230,7 @@ void checkInsertLocation(IsraeliQueue queue, void* object, int *friendLocation,
 }
 
 
-void insertObject(IsraeliQueue queue, void* object, int* friendLocation, bool* skippedToFriend){
+void insertObject(IsraeliQueue queue, void* object, int* friendLocation, bool* skippedToFriend, bool improving){
 	if (*skippedToFriend){
 		for (int i=queue->m_size-1; i>*friendLocation; i--){
 			queue->m_objects[i]=queue->m_objects[i-1];
@@ -216,16 +240,23 @@ void insertObject(IsraeliQueue queue, void* object, int* friendLocation, bool* s
 		queue->m_quotas[*friendLocation+1].m_friendshipQuota=0;
 		queue->m_quotas[*friendLocation+1].m_rivalryQuota=0;
 		queue->m_quotas[*friendLocation+1].m_object=object;
+		if (!improving){
+			queue->m_quotas[*friendLocation+1].improved=false;
+		}
 	}
 	else{
 		queue->m_objects[queue->m_size-2]=object;
 		queue->m_quotas[queue->m_size-2].m_friendshipQuota=0;
 		queue->m_quotas[queue->m_size-2].m_rivalryQuota=0;
 		queue->m_quotas[queue->m_size-2].m_object=object;
+		if (!improving){
+			queue->m_quotas[queue->m_size-2].improved=false;
+		}
 	}
 		queue->m_quotas[queue->m_size-1].m_object=NULL;
 
 }
+
 
 IsraeliQueueError resizeQueue(IsraeliQueue queue){
 	queue->m_objects=realloc(queue->m_objects, (queue->m_size+1)*sizeof(void*));
@@ -247,6 +278,23 @@ IsraeliQueueError resizeQueue(IsraeliQueue queue){
 	return ISRAELIQUEUE_SUCCESS;
 }
 
+int enqueueAndGetIndex(IsraeliQueue queue, void* object){
+	int friendLocation=UNINITIALIZED;
+	bool skippedToFriend=false;
+
+	checkInsertLocation(queue, object, &friendLocation, &skippedToFriend);
+	if (resizeQueue(queue)==ISRAELIQUEUE_ALLOC_FAILED){					//Resizing
+		return ENQUEUE_FAILED;
+	}
+	insertObject(queue, object, &friendLocation, &skippedToFriend, true);
+	if (skippedToFriend){
+		return friendLocation+1;
+	}
+	else{
+		return queue->m_size-2;
+	}
+}
+
 IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue queue, void* object){
 	if (queue==NULL || object==NULL){
 	#ifndef DNDEBUG
@@ -261,7 +309,7 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue queue, void* object){
 	if (resizeQueue(queue)==ISRAELIQUEUE_ALLOC_FAILED){					//Resizing
 		return ISRAELIQUEUE_ALLOC_FAILED;
 	}
-	insertObject(queue, object, &friendLocation, &skippedToFriend);
+	insertObject(queue, object, &friendLocation, &skippedToFriend, false);
 	return ISRAELIQUEUE_SUCCESS;
 	}
 
@@ -426,7 +474,7 @@ void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index){
 
 
 
-int FindIsraeliQueueObject(IsraeliQueue queue, void** object){
+int FindIsraeliQueueObject(IsraeliQueue queue, void* object){
 	if (queue==NULL){
 		#ifndef DNDEBUG
 		printf("IsraeliQueueFindObject: queue is NULL");
@@ -442,7 +490,7 @@ int FindIsraeliQueueObject(IsraeliQueue queue, void** object){
 	}
 
 	for (int i=0; i<queue->m_size-1; i++){
-		if (&(queue->m_objects[i])==object){
+		if (queue->m_objects[i]==object){
 			return i;
 		}
 	}
@@ -467,17 +515,22 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 
 	for (int i=originalQueue->m_size-2; i>=0; i--){
 		void* currentObject=originalQueue->m_objects[i];
-		Quota currentQuota=originalQueue->m_quotas[i];
 		for (int j=originalQueue->m_size-2; j>=0; j--){
-			if (currentObject==(queue->m_objects[j])){
+			if ((currentObject==(queue->m_objects[j])) && !(queue->m_quotas[j].improved)){
+				Quota currentQuota=queue->m_quotas[j];
 				IsraeliQueueDequeueAtIndex(queue, j);
-				IsraeliQueueEnqueue(queue, currentObject);
-				int index=FindIsraeliQueueObject(queue, currentObject);
+				int index=enqueueAndGetIndex(queue, currentObject);
 				queue->m_quotas[index]=currentQuota; //retain quota
+				queue->m_quotas[index].improved=true;
+				break;
 
 			}
 		}
 
+	}
+	//reset improved flags
+	for (int i=0; i<queue->m_size-1; i++){
+		queue->m_quotas[i].improved=false;
 	}
 	IsraeliQueueDestroy(originalQueue);
 	return ISRAELIQUEUE_SUCCESS;
@@ -654,11 +707,13 @@ void PrintIsraeliQueue(IsraeliQueue queue) {
 int main(){
 	int arr[]={1,2,3,4};
 	FriendshipFunction functions[]={mockfriendshipfunction, NULL};
-	IsraeliQueue queue=IsraeliQueueCreate(functions, comparison_function_mock, 100, 0);
+	IsraeliQueue queue=IsraeliQueueCreate(functions, comparison_function_mock, 0, 0);
 	for (int i=0; i<4; i++){
 		IsraeliQueueEnqueue(queue, &arr[i]);
 		
 	}
+	bool test=false;
+	printf("%d\n", test);
 	IsraeliQueueAddFriendshipMeasure(queue, mockfriendshipfunction);
 	IsraeliQueue p=IsraeliQueueClone(queue);
 	IsraeliQueue j=IsraeliQueueClone(queue);
