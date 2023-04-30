@@ -426,7 +426,7 @@ void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index){
 
 
 
-int FindIsraeliQueueObject(IsraeliQueue queue, void* object){
+int FindIsraeliQueueObject(IsraeliQueue queue, void** object){
 	if (queue==NULL){
 		#ifndef DNDEBUG
 		printf("IsraeliQueueFindObject: queue is NULL");
@@ -442,7 +442,7 @@ int FindIsraeliQueueObject(IsraeliQueue queue, void* object){
 	}
 
 	for (int i=0; i<queue->m_size-1; i++){
-		if (queue->m_objects[i]==object){
+		if (&(queue->m_objects[i])==object){
 			return i;
 		}
 	}
