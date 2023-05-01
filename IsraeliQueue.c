@@ -8,6 +8,7 @@
 #define UNINITIALIZED -1
 #define CANNOT_FIND -2
 #define ENQUEUE_FAILED -3
+#define ENQUEUE
 
 typedef enum { FRIEND, RIVAL, NEUTRAL } Relation;
 
@@ -55,7 +56,6 @@ struct IsraeliQueue_t {
 	int m_friendshipThreshold;
 	int m_rivalryThreshold;
 	FriendshipFunction* m_friendshipFunctions;
-	bool m_updatedFriendshipFunctions;
 	ComparisonFunction m_compare;
 	void** m_objects;
 	int m_size;
@@ -129,9 +129,8 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction *friendshipFunctions,
 
 	newQueue->m_friendshipThreshold = friendshipThreshold;
 	newQueue->m_rivalryThreshold = rivalryThreshold;
-	newQueue->m_friendshipFunctions = friendshipFunctions;
+	newQueue->m_friendshipFunctions = copyFriendshipFunctions(friendshipFunctions);
 	newQueue->m_compare = compare;
-	newQueue->m_updatedFriendshipFunctions = false;
 	newQueue->m_objects = malloc(sizeof(void *));
 	if (newQueue->m_objects == NULL){
 	#ifndef DNDEBUG
@@ -171,7 +170,6 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue queue){
 	newQueue->m_objects=copyObjectArray(queue->m_objects, queue->m_size);
 	newQueue->m_quotas=copyQuotas(queue->m_quotas, queue->m_size);
 	newQueue->m_size=queue->m_size;
-	newQueue->m_updatedFriendshipFunctions=true;
 	return newQueue;
 }
 
@@ -189,9 +187,6 @@ void IsraeliQueueDestroy(IsraeliQueue queue){
 	}
 	if (queue->m_quotas!=NULL){
 		free(queue->m_quotas);
-	}
-	if (queue->m_updatedFriendshipFunctions){
-		free(queue->m_friendshipFunctions);
 	}
 		free(queue);
 	return;
@@ -278,13 +273,14 @@ IsraeliQueueError resizeQueue(IsraeliQueue queue){
 	return ISRAELIQUEUE_SUCCESS;
 }
 
-int enqueueAndGetIndex(IsraeliQueue queue, void* object){
+int enqueueAndGetIndex(IsraeliQueue queue, void* object, IsraeliQueueError* errorFlag){
 	int friendLocation=UNINITIALIZED;
 	bool skippedToFriend=false;
 
 	checkInsertLocation(queue, object, &friendLocation, &skippedToFriend);
 	if (resizeQueue(queue)==ISRAELIQUEUE_ALLOC_FAILED){					//Resizing
 		return ENQUEUE_FAILED;
+		*errorFlag=ISRAELIQUEUE_ALLOC_FAILED;
 	}
 	insertObject(queue, object, &friendLocation, &skippedToFriend, true);
 	if (skippedToFriend){
@@ -364,7 +360,7 @@ bool IsraeliQueueContains(IsraeliQueue queue, void * object){
 	}
 
 	for (int i=0; i<queue->m_size-1; i++){
-		if (queue->m_objects[i]==object){
+		if (queue->m_compare(queue->m_objects[i], object)){
 			return true;
 		}
 	}
@@ -386,23 +382,16 @@ IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue queue, Friendshi
         count++;
     }
 
-    FriendshipFunction *newArray = malloc((count + 2) * sizeof(FriendshipFunction));
-    if (newArray == NULL) {
+    queue->m_friendshipFunctions = realloc(queue->m_friendshipFunctions,(count + 2) * sizeof(FriendshipFunction));
+    if (queue->m_friendshipFunctions == NULL) {
         #ifndef DNDEBUG
         printf("IsraeliQueueAddFriendshipMeasure: malloc failed");
         #endif
         return ISRAELIQUEUE_ALLOC_FAILED;
     }
 
-    for (int i = 0; i < count; i++) {
-        newArray[i] = queue->m_friendshipFunctions[i];
-    }
-
-    newArray[count] = newFriendshipFunction;
-    newArray[count + 1] = NULL;
-    queue->m_friendshipFunctions = newArray;
-	queue->m_updatedFriendshipFunctions=true;
-
+    queue->m_friendshipFunctions[count] = newFriendshipFunction;
+    queue->m_friendshipFunctions[count + 1] = NULL;
     return ISRAELIQUEUE_SUCCESS;
 }
 
@@ -441,7 +430,7 @@ int IsraeliQueueSize(IsraeliQueue queue){
 
 	return queue->m_size-1;
 }
-void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index){
+void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index, IsraeliQueueError* errorFlag){
 	if (queue == NULL){
 		#ifndef DNDEBUG
 		printf("IsraeliQueueDequeueAtIndex: queue is NULL");
@@ -459,11 +448,13 @@ void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index){
 		queue->m_objects[i] = queue->m_objects[i + 1];
 		queue->m_quotas[i] = queue->m_quotas[i + 1];
 	}
+	void *temp_ptr=queue->m_objects;
 	void** tempObjects = realloc(queue->m_objects, (queue->m_size - 1) * sizeof(void*));
 	if (tempObjects == NULL){
 		#ifndef DNDEBUG
 		printf("IsraeliQueueDequeueAtIndex: realloc failed in IsraeliQueueDequeueAtIndex");
 		#endif
+		*errorFlag = ISRAELIQUEUE_ALLOC_FAILED;
 		return NULL;
 	}
 	queue->m_objects = tempObjects;
@@ -505,6 +496,7 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 		#endif
 		return ISRAELIQUEUE_BAD_PARAM;
 	}
+	IsraeliQueueError errorFlag=ISRAELIQUEUE_SUCCESS;
 	IsraeliQueue originalQueue=IsraeliQueueClone(queue);
 	if (originalQueue==NULL){
 		#ifndef DNDEBUG
@@ -512,18 +504,30 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 		#endif
 		return ISRAELIQUEUE_ALLOC_FAILED;
 	}
-
 	for (int i=originalQueue->m_size-2; i>=0; i--){
 		void* currentObject=originalQueue->m_objects[i];
 		for (int j=originalQueue->m_size-2; j>=0; j--){
 			if ((currentObject==(queue->m_objects[j])) && !(queue->m_quotas[j].improved)){
 				Quota currentQuota=queue->m_quotas[j];
-				IsraeliQueueDequeueAtIndex(queue, j);
-				int index=enqueueAndGetIndex(queue, currentObject);
+				IsraeliQueueDequeueAtIndex(queue, j, &errorFlag);
+				if (errorFlag==ISRAELIQUEUE_ALLOC_FAILED){
+					#ifndef DNDEBUG
+					printf("IsraeliQueueImprovePosition: dequeue failed");
+					#endif
+					IsraeliQueueDestroy(originalQueue);
+					return ISRAELIQUEUE_ALLOC_FAILED;
+				}
+				int index=enqueueAndGetIndex(queue, currentObject, &errorFlag);
+				if (errorFlag==ISRAELIQUEUE_ALLOC_FAILED){
+					#ifndef DNDEBUG
+					printf("IsraeliQueueImprovePosition: enqueue failed");
+					#endif
+					IsraeliQueueDestroy(originalQueue);
+					return ISRAELIQUEUE_ALLOC_FAILED;
+				}
 				queue->m_quotas[index]=currentQuota; //retain quota
 				queue->m_quotas[index].improved=true;
 				break;
-
 			}
 		}
 
@@ -534,7 +538,6 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 	}
 	IsraeliQueueDestroy(originalQueue);
 	return ISRAELIQUEUE_SUCCESS;
-
 }
 /*
 IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
@@ -773,7 +776,6 @@ int main(){
 	printf("\nExpected:    4 4 4 5 1 3 2 2 3 1 4 3\n");
 
 
-	
 	return 0;
 }
 
