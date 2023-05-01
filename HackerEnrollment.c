@@ -36,7 +36,10 @@ char getChar(char* str, int i, char mode) {
     if (i >= strlen(str)) {
         return 0;
     }
-    return str[i] - ('a' - 'A')*(mode == 'l');
+    if ('A' <= str[i] && str[i] <= 'Z' && mode == 'l') {
+        return str[i] - 'a' + 'A';
+    }
+    return str[i];
 }
 
 int ascii_difference(char* str1, char* str2, char mode) {
