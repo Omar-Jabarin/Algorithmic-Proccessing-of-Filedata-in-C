@@ -30,10 +30,6 @@ EnrollmentSystem initEnrollment(char* students, char* courses, char* hackers, in
 
     updateFriendshipFunction(sys, flag);
 
-    if (flag) {
-        updateFriendshipFunction(sys);
-    }
-
     fclose(fp_students);
     fclose(fp_courses);
     fclose(fp_hackers);
