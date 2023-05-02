@@ -456,6 +456,7 @@ int IsraeliQueueSize(IsraeliQueue queue){
 
 	return queue->m_size-1;
 }
+
 void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index, IsraeliQueueError* errorFlag){
 	if (queue == NULL){
 		#ifndef DNDEBUG
@@ -488,33 +489,6 @@ void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index, IsraeliQueueErro
 	queue->m_size -= 1;
 	return object;
 }
-
-
-
-
-int FindIsraeliQueueObject(IsraeliQueue queue, void* object){
-	if (queue==NULL){
-		#ifndef DNDEBUG
-		printf("IsraeliQueueFindObject: queue is NULL");
-		#endif
-		return CANNOT_FIND;
-	}
-
-	if (object==NULL){
-		#ifndef DNDEBUG
-		printf("IsraeliQueueFindObject: object is NULL");
-		#endif
-		return CANNOT_FIND;
-	}
-
-	for (int i=0; i<queue->m_size-1; i++){
-		if (queue->m_objects[i]==object){
-			return i;
-		}
-	}
-	return CANNOT_FIND;
-}
-
 
 IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 	if (queue==NULL){
@@ -566,59 +540,6 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 	IsraeliQueueDestroy(originalQueue);
 	return ISRAELIQUEUE_SUCCESS;
 }
-/*
-IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
-    if (queue==NULL){
-        #ifndef DNDEBUG
-        printf("IsraeliQueueImprovePosition: queue is NULL");
-        #endif
-        return ISRAELIQUEUE_BAD_PARAM;
-    }
-
-    // An array to keep track of the dequeued elements
-    void** dequeuedElements = malloc(queue->m_size * sizeof(void*));
-    if (dequeuedElements == NULL){
-        #ifndef DNDEBUG
-        printf("IsraeliQueueImprovePosition: malloc failed");
-        #endif
-        return ISRAELIQUEUE_ALLOC_FAILED;
-    }
-    int dequeuedCount = 0;
-	Quota currentQuota=queue->m_quotas[queue->m_size-2];
-    for (int i = queue->m_size - 2; i >= 0; i--) {
-		currentQuota=queue->m_quotas[i];
-        bool alreadyProcessed = false;
-        // Check if the current element has been already dequeued and enqueued again
-        for (int j = 0; j < dequeuedCount; j++) {
-            if (queue->m_objects[i] == dequeuedElements[j]) {
-                alreadyProcessed = true;
-                break;
-            }
-        }
-        // If the element has not been dequeued yet, dequeue and enqueue it again
-        if (!alreadyProcessed) {
-            void* object = IsraeliQueueDequeueAtIndex(queue, i);
-            if (object == NULL) {
-                free(dequeuedElements);
-                return ISRAELI_QUEUE_ERROR;
-            }
-            dequeuedElements[dequeuedCount++] = object;
-            IsraeliQueueEnqueue(queue, object);
-			i=queue->m_size-2;
-			int k=FindIsraeliQueueObject(queue, object);
-			if (k==CANNOT_FIND){
-				#ifndef DNDEBUG
-				printf("IsraeliQueueImprovePosition: IsraeliQueueFindObject failed");
-				#endif
-				return ISRAELI_QUEUE_ERROR;
-        	}
-			queue->m_quotas[k]=currentQuota; //Retain the quota of dequeued and then enqueued element
-		}
-    }
-    free(dequeuedElements);
-    return ISRAELIQUEUE_SUCCESS;
-}
-*/
 
 FriendshipFunction* getAllFriendshipFunctions(IsraeliQueue* queues) {
     int totalSize = 0;
@@ -704,104 +625,3 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArray, ComparisonFunction comp
 	result->m_objects[sizeOfNewQueue-1]=NULL;
 	return result;
 } 
-//test 4
-
-
-
-int comparison_function_mock(void *obj1, void *obj2) {
-    int id1 = *(int *)obj1;
-    int id2 = *(int *)obj2;
-
-    return !(id1 - id2);
-}
-int mockfriendshipfunction(void* firstObject, void* secondObject){
-	int temp = (*(int*)firstObject)+(*(int*)firstObject)+50;
-	return temp;
-}
-
-
-int main(){
-	// test 1
-
-	/* iterations: 
-	1 2 3 4 5 6 7 8 9 10 11 12 <-original
-	1 12 2 3 4 5 6 7 8 9 10 11
-	1 11 12 2 3 4 5 6 7 8 9 10
-	1 10 11 12 2 3 4 5 6 7 8 9
-	1 9 10 11 12 2 3 4 5 6 7 8
-	1 8 9 10 11 12 2 3 4 5 6 7
-	1 8 7 9 10 11 12 2 3 4 5 6
-	1 8 6 7 9 10 11 12 2 3 4 5
-	1 8 5 6 7 9 10 11 12 2 3 4
-	1 8 4 5 6 7 9 10 11 12 2 3
-	1 8 3 4 5 6 7 9 10 11 12 2
-	1 8 3 2 4 5 6 7 9 10 11 12
-	8 3 1 2 4 5 6 7 9 10 11 12
-	
-	 */
-	int arr[]={1,2,3,4,5,6,7,8,9,10,11,12};
-	FriendshipFunction functions[]={NULL};
-	IsraeliQueue queue=IsraeliQueueCreate(functions, comparison_function_mock, 0, 0);
-	
-	for (int i=0; i<12; i++){
-		IsraeliQueueEnqueue(queue, &arr[i]);
-		
-	}
-	IsraeliQueueAddFriendshipMeasure(queue, mockfriendshipfunction);
-	IsraeliQueueImprovePositions(queue);
-	printf("Test1:\nYour output: ");
-	for (int i=0; i<12; i++){
-		int s=*(int*)IsraeliQueueDequeue(queue);
-		printf("%d ", s);
-	}
-	printf("\nExpected:    8 3 1 2 4 5 6 7 9 10 11 12\n");
-	IsraeliQueueDestroy(queue);
-
-	// test 2
-	/*iterations:
-	1:  *4
-	2:  4 *3
-	3:  4 *4 3
-	4:  4 *1 4 3
-	5:  4 *3 1 4 3
-	6:  4 *4 3 1 4 3
-	7:  4 4 *2 3 1 4 3
-	8:  4 4 *2 2 3 1 4 3
-	9:  4 4 *3 2 2 3 1 4 3
-	10: 4 4 *1 3 2 2 3 1 4 3
-	11: 4 4 *4 1 3 2 2 3 1 4 3
-	12: 4 4 4 *5 1 3 2 2 3 1 4 3
-	
-	
-	*/
-	queue=IsraeliQueueCreate(functions, comparison_function_mock, 0, 0);
-	for (int i=0; i<4; i++){
-		IsraeliQueueEnqueue(queue, &arr[i]);
-	}
-	IsraeliQueue p=IsraeliQueueClone(queue);
-	IsraeliQueueImprovePositions(queue);
-	int *five=malloc(sizeof(int));
-	*five=5;
-	IsraeliQueueEnqueue(queue, five);
-	IsraeliQueue s=IsraeliQueueClone(p);
-	IsraeliQueue f=IsraeliQueueClone(p);
-	for (int j=0; j<2; j++){
-		IsraeliQueueDequeue(p);
-	}
-	for (int k=0; k<3; k++){
-		IsraeliQueueDequeue(s);
-	}
-	IsraeliQueueAddFriendshipMeasure(f, mockfriendshipfunction);
-	IsraeliQueue q_arr[]={queue, p, s, f, NULL};
-	IsraeliQueue result=IsraeliQueueMerge(q_arr, comparison_function_mock);
-	printf("Test2:\nYour output: ");
-	for (int i=0; i<12; i++){
-		int s=*(int*)IsraeliQueueDequeue(result);
-		printf("%d ", s);
-	}
-	printf("\nExpected:    4 4 4 5 1 3 2 2 3 1 4 3\n");
-
-
-	return 0;
-}
-
