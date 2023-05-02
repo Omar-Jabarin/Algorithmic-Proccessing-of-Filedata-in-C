@@ -20,16 +20,23 @@ EnrollmentSystem initEnrollment(char* students, char* courses, char* hackers, in
         return NULL;
     }
 
-    EnrollmentSystem new_sys = createEnrollment(fp_students, fp_courses, fp_hackers);
+    EnrollmentSystem sys = createEnrollment(fp_students, fp_courses, fp_hackers);
+    if (!sys) {
+        fclose(fp_students);
+        fclose(fp_courses);
+        fclose(fp_hackers);
+        return NULL;
+    }
 
-    char mode = (flag) ? 'l' : 'u';
-    initQueues(new_sys, mode);
+    if (flag) {
+        updateFriendshipFunction(sys);
+    }
 
     fclose(fp_students);
     fclose(fp_courses);
     fclose(fp_hackers);
 
-    return new_sys;
+    return sys;
 }
 
 int main(int argc, char** argv) {
@@ -46,12 +53,19 @@ int main(int argc, char** argv) {
         }
     }
 
-    EnrollmentSystem new_sys = initEnrollment(argv[1 + flag], argv[2 + flag], argv[3 + flag], flag);
+    EnrollmentSystem sys = initEnrollment(argv[1 + flag], argv[2 + flag], argv[3 + flag], flag);
+    if (!sys) {
+        return 1;
+    }
     FILE* fp_queues = fopen(argv[4 + flag], "r");
     if (!fp_queues) {
         return 1;
     }
-    EnrollmentSystem sys = readEnrollment(new_sys, fp_queues);
+    sys = readEnrollment(sys, fp_queues);
+    if (!sys) {
+        fclose(fp_queues);
+        return 1;
+    }
     FILE* fp_target = fopen(argv[5 + flag], "w");
     if (!fp_target) {
         fclose(fp_queues);
