@@ -7,10 +7,6 @@
 
 
 // Auxiliary Functions
-int max(int a, int b) {
-    return (a > b) ? a : b;
-}
-
 int strToInt(char* str) {
     int rv = 0;
     for (int i = 0; i < strlen(str); i++) {
@@ -518,7 +514,7 @@ EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hac
 
     LinkedList* courses = sys->courses;
     while (courses) {
-        ((Course *)(courses->val.ptr))->queue = IsraeliQueueCreate(sys->friendship_functions, comparisonFunction, FRIENDSHIP_TH, RIVALRY_TH);
+        ((Course *)(courses->val.ptr))->queue = IsraeliQueueCreate(friendship_functions, comparisonFunction, FRIENDSHIP_TH, RIVALRY_TH);
         if (!(((Course *)(courses->val.ptr))->queue)) {
             free(friendship_functions);
             return NULL;
@@ -531,11 +527,11 @@ EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hac
 
 void updateFriendshipFunction(EnrollmentSystem sys, int lower_flag) {
     LinkedList* course = sys->courses;
-    while ((Course *)(course->ptr)) {
+    while ((Course *)(course->val.ptr)) {
         if (lower_flag) {
-            IsraeliQueueAddFriendshipMeasure(course->ptr->queue, friendshipFunctionLowercase)
+            IsraeliQueueAddFriendshipMeasure(course->val.ptr->queue, friendshipFunctionLowercase)
         } else {
-            IsraeliQueueAddFriendshipMeasure(course->ptr->queue, friendshipFunctionUppercase);
+            IsraeliQueueAddFriendshipMeasure(course->val.ptr->queue, friendshipFunctionUppercase);
         }
         course = course->next;
     }
