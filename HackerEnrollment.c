@@ -529,9 +529,9 @@ void updateFriendshipFunction(EnrollmentSystem sys, int lower_flag) {
     LinkedList* course = sys->courses;
     while ((Course *)(course->val.ptr)) {
         if (lower_flag) {
-            IsraeliQueueAddFriendshipMeasure(course->val.ptr->queue, friendshipFunctionLowercase)
+            IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipFunctionLowercase);
         } else {
-            IsraeliQueueAddFriendshipMeasure(course->val.ptr->queue, friendshipFunctionUppercase);
+            IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipFunctionUppercase);
         }
         course = course->next;
     }
