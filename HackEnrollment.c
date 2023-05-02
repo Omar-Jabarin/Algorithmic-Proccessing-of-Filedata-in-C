@@ -27,13 +27,11 @@ EnrollmentSystem initEnrollment(char* students, char* courses, char* hackers, in
         fclose(fp_hackers);
         return NULL;
     }
-
     updateFriendshipFunction(sys, flag);
 
     fclose(fp_students);
     fclose(fp_courses);
     fclose(fp_hackers);
-
     return sys;
 }
 
@@ -50,7 +48,7 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
-
+    
     EnrollmentSystem sys = initEnrollment(argv[1 + flag], argv[2 + flag], argv[3 + flag], flag);
     if (!sys) {
         return 1;
@@ -59,6 +57,7 @@ int main(int argc, char** argv) {
     if (!fp_queues) {
         return 1;
     }
+    
     sys = readEnrollment(sys, fp_queues);
     if (!sys) {
         fclose(fp_queues);
@@ -69,10 +68,12 @@ int main(int argc, char** argv) {
         fclose(fp_queues);
         return 1;
     }
-
+    
     hackEnrollment(sys, fp_target);
+
     fclose(fp_queues);
     fclose(fp_target);
     destroyEnrollment(sys);
+
     return 0;
 }

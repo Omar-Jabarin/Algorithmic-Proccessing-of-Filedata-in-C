@@ -40,7 +40,7 @@ char getChar(char* str, int i, char mode) {
 
 int ascii_difference(char* str1, char* str2, char mode) {
     int rv = 0;
-    for (int i = 0; i < max(strlen(str1), strlen(str2)); i++) {
+    for (int i = 0; i < fmax(strlen(str1), strlen(str2)); i++) {
         rv += abs(getChar(str1, i, mode) - getChar(str2, i, mode));
     }
     return rv;
@@ -277,7 +277,7 @@ void destroyStudents(LinkedList* students) {
         temp = students->next;
         free(students);
     }
-};
+}
 
 Course* createCourse(char* str) {
     Course* ptr = malloc(sizeof(Course));
@@ -414,49 +414,59 @@ void printLinkedListClass(LinkedList* node, void (*print_func)(void *)) {
 
 
 // Friendship Functions
-typedef int (*f_ptr)(Student*, Student*);
+typedef int (*f_ptr)(void*, void*);
 
-int comparisonFunction(Student *a, Student *b) {
-    return (a->id == b->id);
+int comparisonFunction(void* a, void* b) {
+    Student* ta = (Student *) a;
+    Student* tb = (Student *) b;
+    return (ta->id == tb->id);
 }
 
-int friendshipFunctionID (Student *a, Student *b) {
-    if (!(a->profile) && !(b->profile)) {
+int friendshipFunctionID (void* a, void* b) {
+    Student* ta = (Student *) a;
+    Student* tb = (Student *) b;
+    if (!(ta->profile) && !(tb->profile)) {
         return 0;
     }
-    return abs(a->id - b->id);
+    return abs(ta->id - tb->id);
 }
 
-int friendshipFunctionUppercase (Student *a, Student *b) {
-    if (!(a->profile) && !(b->profile)) {
+int friendshipFunctionUppercase (void* a, void* b) {
+    Student* ta = (Student *) a;
+    Student* tb = (Student *) b;
+    if (!(ta->profile) && !(tb->profile)) {
         return 0;
     }
-    return ascii_difference(a->name, b->name, 'u') + ascii_difference(a->surname, b->surname, 'u');
+    return ascii_difference(ta->name, tb->name, 'u') + ascii_difference(ta->surname, tb->surname, 'u');
 }
 
-int friendshipFunctionLowercase (Student *a, Student *b) {
-    if (!(a->profile) && !(b->profile)) {
+int friendshipFunctionLowercase (void* a, void* b) {
+    Student* ta = (Student *) a;
+    Student* tb = (Student *) b;
+    if (!(ta->profile) && !(tb->profile)) {
         return 0;
     }
-    return ascii_difference(a->name, b->name, 'l') + ascii_difference(a->surname, b->surname, 'l');
+    return ascii_difference(ta->name, tb->name, 'l') + ascii_difference(ta->surname, tb->surname, 'l');
 }
 
-int friendshipRivalryFunction(Student* a, Student* b) {
+int friendshipRivalryFunction(void* a, void* b) {
+    Student* ta = (Student *) a;
+    Student* tb = (Student *) b;
     const int FRIENDSHIP_RV = 20;
     const int RIVALRY_RV = -20;
-    if (a->profile) {
-        if (contains(a->profile->friends, b->id)) {
+    if (ta->profile) {
+        if (contains(ta->profile->friends, tb->id)) {
             return FRIENDSHIP_RV;
         }
-        if (contains(a->profile->rivals, b->id)) {
+        if (contains(ta->profile->rivals, tb->id)) {
             return RIVALRY_RV;
         }
     }
-    if (b->profile) {
-        if (contains(b->profile->friends, a->id)) {
+    if (tb->profile) {
+        if (contains(tb->profile->friends, ta->id)) {
             return FRIENDSHIP_RV;
         }
-        if (contains(b->profile->rivals, a->id)) {
+        if (contains(tb->profile->rivals, ta->id)) {
             return RIVALRY_RV;
         }
     }
@@ -464,7 +474,7 @@ int friendshipRivalryFunction(Student* a, Student* b) {
 }
 
 f_ptr* createFriendshipFunctions() {
-    f_ptr* friendship_functions = malloc(3*sizeof(f_ptr*));
+    f_ptr* friendship_functions = malloc(3*sizeof(f_ptr));
     if (!friendship_functions) {
         return NULL;
     }
@@ -527,7 +537,7 @@ EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hac
 
 void updateFriendshipFunction(EnrollmentSystem sys, int lower_flag) {
     LinkedList* course = sys->courses;
-    while ((Course *)(course->val.ptr)) {
+    while (course) {
         if (lower_flag) {
             IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipFunctionLowercase);
         } else {
