@@ -657,8 +657,9 @@ void hackEnrollment(EnrollmentSystem sys, FILE* out) {
 
 void destroyEnrollment(EnrollmentSystem sys) {
     destroyStudents(sys->students);
-    destroyCourses(sys->courses);
     free(sys->friendship_functions);
+    sys->friendship_functions = NULL;
+    destroyCourses(sys->courses);
     free(sys);
 }
 
