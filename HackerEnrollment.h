@@ -9,7 +9,7 @@ EnrollmentSystem readEnrollment(EnrollmentSystem sys, FILE* queue);
 
 void hackEnrollment(EnrollmentSystem sys, FILE* out);
 
-void updateFriendshipFunction(EnrollmentSystem sys);
+void updateFriendshipFunction(EnrollmentSystem sys, int lower_flag);
 
 void destroyEnrollment(EnrollmentSystem sys);
 

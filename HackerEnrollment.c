@@ -418,7 +418,7 @@ void printLinkedListClass(LinkedList* node, void (*print_func)(void *)) {
 
 
 // Friendship Functions
-typedef int (*f_ptr)(void*, void*);
+typedef int (*f_ptr)(Student*, Student*);
 
 int comparisonFunction(Student *a, Student *b) {
     return (a->id == b->id);
@@ -468,15 +468,14 @@ int friendshipRivalryFunction(Student* a, Student* b) {
 }
 
 f_ptr* createFriendshipFunctions() {
-    f_ptr* friendship_functions = malloc(4*sizeof(f_ptr*));
+    f_ptr* friendship_functions = malloc(3*sizeof(f_ptr*));
     if (!friendship_functions) {
         return NULL;
     }
 
-    friendship_functions[0] = (f_ptr)friendshipFunctionID;
-    friendship_functions[1] = (f_ptr)friendshipFunctionUppercase;
-    friendship_functions[2] = (f_ptr)friendshipRivalryFunction;
-    friendship_functions[3] = NULL;
+    friendship_functions[0] = friendshipFunctionID;
+    friendship_functions[1] = friendshipRivalryFunction;
+    friendship_functions[2] = NULL;
 
     return friendship_functions;
 }
@@ -486,7 +485,6 @@ f_ptr* createFriendshipFunctions() {
 typedef struct {
     LinkedList* courses;
     LinkedList* students;
-    f_ptr* friendship_functions;
 } EnrollmentSystem_t, *EnrollmentSystem;
 
 EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hackers_fp) {
@@ -511,8 +509,8 @@ EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hac
         destroyCourses(sys->courses);
         return NULL;
     }
-    sys->friendship_functions = createFriendshipFunctions('u');
-    if (!(sys->friendship_functions)) {
+    f_ptr* friendship_functions = createFriendshipFunctions();
+    if (!friendship_functions) {
         destroyStudents(sys->students);
         destroyCourses(sys->courses);
         return NULL;
@@ -520,18 +518,27 @@ EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hac
 
     LinkedList* courses = sys->courses;
     while (courses) {
-        ((Course *)(courses->val.ptr))->queue = IsraeliQueueCreate(sys->friendship_functions, (f_ptr)comparisonFunction, FRIENDSHIP_TH, RIVALRY_TH);
+        ((Course *)(courses->val.ptr))->queue = IsraeliQueueCreate(sys->friendship_functions, comparisonFunction, FRIENDSHIP_TH, RIVALRY_TH);
         if (!(((Course *)(courses->val.ptr))->queue)) {
+            free(friendship_functions);
             return NULL;
         }
         courses = courses->next;
     }
-    
+    free(friendship_functions);
     return sys;
 }
 
-void updateFriendshipFunction(EnrollmentSystem sys) {
-    sys->friendship_functions[1] = (f_ptr)friendshipFunctionLowercase;
+void updateFriendshipFunction(EnrollmentSystem sys, int lower_flag) {
+    LinkedList* course = sys->courses;
+    while ((Course *)(course->ptr)) {
+        if (lower_flag) {
+            IsraeliQueueAddFriendshipMeasure(course->ptr->queue, friendshipFunctionLowercase)
+        } else {
+            IsraeliQueueAddFriendshipMeasure(course->ptr->queue, friendshipFunctionUppercase);
+        }
+        course = course->next;
+    }
 }
 
 bool parseQueue(char* str, LinkedList* courses, LinkedList* students) {
@@ -611,10 +618,12 @@ Student* testHackerPositionQueues(Course* course, LinkedList* students) {
         if (i >= course->size && temp->profile) {
             (temp->profile->failed_courses)++;
             if (temp->profile->failed_courses >= 2){
+                IsraeliQueueDestroy(queue_clone);
                 return temp;
             }
         }
     }
+    IsraeliQueueDestroy(queue_clone);
     return NULL;
 }
 
@@ -657,8 +666,6 @@ void hackEnrollment(EnrollmentSystem sys, FILE* out) {
 
 void destroyEnrollment(EnrollmentSystem sys) {
     destroyStudents(sys->students);
-    free(sys->friendship_functions);
-    sys->friendship_functions = NULL;
     destroyCourses(sys->courses);
     free(sys);
 }

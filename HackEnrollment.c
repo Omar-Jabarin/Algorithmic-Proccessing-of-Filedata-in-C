@@ -28,6 +28,8 @@ EnrollmentSystem initEnrollment(char* students, char* courses, char* hackers, in
         return NULL;
     }
 
+    updateFriendshipFunction(sys, flag);
+
     if (flag) {
         updateFriendshipFunction(sys);
     }
