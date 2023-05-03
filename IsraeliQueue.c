@@ -161,6 +161,19 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue queue){
 
 	return NULL;
 	}
+	IsraeliQueueError errorFlag=ISRAELIQUEUE_SUCCESS;
+
+	if (queue->m_size==1){
+		IsraeliQueue newQueue=IsraeliQueueCreate(queue->m_friendshipFunctions, queue->m_compare,
+		 queue->m_friendshipThreshold, queue->m_rivalryThreshold);
+		 if (newQueue==NULL){
+			#ifndef NDEBUG
+			printf("IsraeliQueueClone: malloc failed in IsraeliQueueClone");
+			#endif
+			return NULL;
+		 }
+		 return newQueue;
+	}
 
 	IsraeliQueue newQueue = malloc(sizeof(*newQueue));
 	if (newQueue==NULL){
@@ -169,7 +182,6 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue queue){
 	#endif
 		return NULL;
 	}
-	IsraeliQueueError errorFlag=ISRAELIQUEUE_SUCCESS;
 	newQueue->m_friendshipThreshold=queue->m_friendshipThreshold;
 	newQueue->m_rivalryThreshold=queue->m_rivalryThreshold;
 	newQueue->m_friendshipFunctions=copyFriendshipFunctions(queue->m_friendshipFunctions, &errorFlag);
