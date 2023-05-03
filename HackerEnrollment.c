@@ -604,12 +604,12 @@ void addHackerToCourses(LinkedList* courses, Student* hacker) {
 }
 
 int writeCourseToFile(FILE* fp, Course* course) {
+    fprintf(fp, "%d", course->id);
     int len_queue = IsraeliQueueSize(course->queue);
     Student* temp;
     for (int i = 0; i < len_queue; i++) {
         temp = IsraeliQueueDequeue(course->queue);
-        fprintf(fp, "%d", temp->id);
-        fputs(" ", fp);
+        fprintf(fp, " %d", temp->id);
     }
     fputs("\n", fp);
     return 0;
