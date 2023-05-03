@@ -25,7 +25,7 @@ FriendshipFunction* copyFriendshipFunctions(FriendshipFunction* friendshipFuncti
 	}
 	FriendshipFunction* newFriendshipFunctions = malloc((size+1)*sizeof(FriendshipFunction));
 	if (newFriendshipFunctions==NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("copyFriendshipFunctions: malloc failed in copyFriendshipFunctions");
 	#endif
 		return NULL;
@@ -40,7 +40,7 @@ FriendshipFunction* copyFriendshipFunctions(FriendshipFunction* friendshipFuncti
 Quota* copyQuotas(Quota* quotas, int size, IsraeliQueueError* errorFlag){
 	Quota* newQuotas = malloc(size*sizeof(Quota));
 	if (newQuotas==NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("copyQuotas: malloc failed in copyQuotas");
 	#endif
 		*errorFlag=ISRAELIQUEUE_ALLOC_FAILED;
@@ -95,7 +95,7 @@ Relation checkRelation(FriendshipFunction* friendshipFunctions,
 void** copyObjectArray(void** objects, int size, IsraeliQueueError* errorFlag){
 	void** newObjects = malloc(size*sizeof(void*));
 	if (newObjects==NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("copyObjectArray: malloc failed in copyObjectArray");
 	#endif
 		*errorFlag=ISRAELIQUEUE_ALLOC_FAILED;
@@ -112,7 +112,7 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction *friendshipFunctions,
  								ComparisonFunction compare, int friendshipThreshold, int rivalryThreshold)
 {
 	if (friendshipFunctions == NULL || compare == NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 		printf("IsraeliQueueCreate: friendshipFunctions or compare is NULL");
 	#endif
 
@@ -120,7 +120,7 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction *friendshipFunctions,
 	}
 	IsraeliQueue newQueue = malloc(sizeof(*newQueue));
 	if (newQueue == NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 		printf("IsraeliQueueCreate: malloc failed in IsraeliQueueCreate");
 	#endif
 		return NULL;
@@ -130,7 +130,7 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction *friendshipFunctions,
 	newQueue->m_rivalryThreshold = rivalryThreshold;
 	newQueue->m_friendshipFunctions = copyFriendshipFunctions(friendshipFunctions, &errorFlag);
 	if (errorFlag==ISRAELIQUEUE_ALLOC_FAILED){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 		printf("IsraeliQueueCreate: malloc failed in IsraeliQueueCreate");
 	#endif
 		free(newQueue);
@@ -139,7 +139,7 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction *friendshipFunctions,
 	newQueue->m_compare = compare;
 	newQueue->m_objects = malloc(sizeof(void *));
 	if (newQueue->m_objects == NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 		printf("IsraeliQueueCreate: malloc failed in IsraeliQueueCreate");
 	#endif
 		free(newQueue);
@@ -155,7 +155,7 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction *friendshipFunctions,
 IsraeliQueue IsraeliQueueClone(IsraeliQueue queue){
 	
 	if (queue==NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("IsraeliQueueClone: queue is NULL");
 	#endif
 
@@ -164,7 +164,7 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue queue){
 
 	IsraeliQueue newQueue = malloc(sizeof(*newQueue));
 	if (newQueue==NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("IsraeliQueueClone: malloc failed in IsraeliQueueClone");
 	#endif
 		return NULL;
@@ -179,7 +179,7 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue queue){
 	newQueue->m_size=queue->m_size;
 	
 	if (errorFlag==ISRAELIQUEUE_ALLOC_FAILED){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("IsraeliQueueClone: malloc failed in IsraeliQueueClone");
 	#endif
 		free(newQueue);
@@ -191,7 +191,7 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue queue){
 
 void IsraeliQueueDestroy(IsraeliQueue queue){
 	if (queue==NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("IsraeliQueueDestroy: queue is NULL");
 	#endif
 		return;
@@ -276,7 +276,7 @@ IsraeliQueueError resizeQueue(IsraeliQueue queue){
 	void *tempPtr=queue->m_objects;
 	queue->m_objects=realloc(queue->m_objects, (queue->m_size+1)*sizeof(void*));
 	if (queue->m_objects==NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("IsraeliQueueEnqueue: realloc failed in IsraeliQueueEnqueue");
 	#endif
 		free (tempPtr);
@@ -287,7 +287,7 @@ IsraeliQueueError resizeQueue(IsraeliQueue queue){
 	tempPtr=queue->m_quotas;
 	queue->m_quotas=realloc(queue->m_quotas, (queue->m_size+1)*sizeof(Quota));
 	if (queue->m_quotas==NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("IsraeliQueueEnqueue: realloc failed in IsraeliQueueEnqueue");
 	#endif
 		free (tempPtr);
@@ -316,7 +316,7 @@ int enqueueAndGetIndex(IsraeliQueue queue, void* object, IsraeliQueueError* erro
 
 IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue queue, void* object){
 	if (queue==NULL || object==NULL){
-	#ifndef DNDEBUG
+	#ifndef NDEBUG
 	printf("IsraeliQueueEnqueue: queue or object is NULL");
 	#endif
 		return ISRAELIQUEUE_BAD_PARAM;
@@ -336,14 +336,14 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue queue, void* object){
 
 void* IsraeliQueueDequeue(IsraeliQueue queue){
 	if (queue==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueDequeue: queue is NULL");
 		#endif
 		return NULL;
 	}
 
 	if (queue->m_objects[0]==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueDequeue: queue is empty");
 		#endif
 		return NULL;
@@ -357,7 +357,7 @@ void* IsraeliQueueDequeue(IsraeliQueue queue){
 	void *tempPtr=queue->m_objects;
 	queue->m_objects=realloc(queue->m_objects, (queue->m_size-1)*sizeof(void*));
 	if (queue->m_objects==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueDequeue: realloc failed in IsraeliQueueDequeue");
 		#endif
 		free(tempPtr);
@@ -371,14 +371,14 @@ void* IsraeliQueueDequeue(IsraeliQueue queue){
 
 bool IsraeliQueueContains(IsraeliQueue queue, void * object){
 	if (queue==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueContains: queue is NULL");
 		#endif
 		return false;
 	}
 
 	if (object==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueContains: object is NULL");
 		#endif
 		return false;
@@ -396,7 +396,7 @@ bool IsraeliQueueContains(IsraeliQueue queue, void * object){
 
 IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue queue, FriendshipFunction newFriendshipFunction) {
     if (queue == NULL || newFriendshipFunction == NULL) {
-        #ifndef DNDEBUG
+        #ifndef NDEBUG
         printf("IsraeliQueueAddFriendshipMeasure: queue or newFriendshipFunction is NULL");
         #endif
         return ISRAELIQUEUE_BAD_PARAM;
@@ -409,7 +409,7 @@ IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue queue, Friendshi
 	void *tempPtr=queue->m_friendshipFunctions;
     queue->m_friendshipFunctions = realloc(queue->m_friendshipFunctions,(count + 2) * sizeof(FriendshipFunction));
     if (queue->m_friendshipFunctions == NULL) {
-        #ifndef DNDEBUG
+        #ifndef NDEBUG
         printf("IsraeliQueueAddFriendshipMeasure: malloc failed");
         #endif
 		free(tempPtr);
@@ -423,7 +423,7 @@ IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue queue, Friendshi
 
 IsraeliQueueError IsraeliQueueUpdateFriendshipThreshold(IsraeliQueue queue, int newThreshold){
 	if (queue==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueUpdateFriendshipThreshold: queue is NULL");
 		#endif
 		return ISRAELIQUEUE_BAD_PARAM;
@@ -435,7 +435,7 @@ IsraeliQueueError IsraeliQueueUpdateFriendshipThreshold(IsraeliQueue queue, int 
 
 IsraeliQueueError IsraeliQueueUpdateRivalryThreshold(IsraeliQueue queue, int newThreshold){
 	if (queue==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueUpdateRivalryThreshold: queue is NULL");
 		#endif
 		return ISRAELIQUEUE_BAD_PARAM;
@@ -448,7 +448,7 @@ IsraeliQueueError IsraeliQueueUpdateRivalryThreshold(IsraeliQueue queue, int new
 
 int IsraeliQueueSize(IsraeliQueue queue){
 	if (queue==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueSize: queue is NULL");
 		#endif
 		return 0;
@@ -459,13 +459,13 @@ int IsraeliQueueSize(IsraeliQueue queue){
 
 void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index, IsraeliQueueError* errorFlag){
 	if (queue == NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueDequeueAtIndex: queue is NULL");
 		#endif
 		return NULL;
 	}
 	if (index < 0 || index >= queue->m_size - 1){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueDequeueAtIndex: invalid index");
 		#endif
 		return NULL;
@@ -473,7 +473,7 @@ void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index, IsraeliQueueErro
 	void *tempPtr=queue->m_objects;
 	void** objects = realloc(queue->m_objects, (queue->m_size - 1) * sizeof(void*));
 	if (objects == NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueDequeueAtIndex: realloc failed in IsraeliQueueDequeueAtIndex");
 		#endif
 		free(tempPtr);
@@ -492,15 +492,18 @@ void* IsraeliQueueDequeueAtIndex(IsraeliQueue queue, int index, IsraeliQueueErro
 
 IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 	if (queue==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueImprovePosition: queue is NULL");
 		#endif
 		return ISRAELIQUEUE_BAD_PARAM;
 	}
+	if (queue->m_size<=1){
+		return ISRAELIQUEUE_SUCCESS;
+	}
 	IsraeliQueueError errorFlag=ISRAELIQUEUE_SUCCESS;
 	IsraeliQueue originalQueue=IsraeliQueueClone(queue);
 	if (originalQueue==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueImprovePosition: clone failed");
 		#endif
 		return ISRAELIQUEUE_ALLOC_FAILED;
@@ -512,7 +515,7 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 				Quota currentQuota=queue->m_quotas[j];
 				IsraeliQueueDequeueAtIndex(queue, j, &errorFlag);
 				if (errorFlag==ISRAELIQUEUE_ALLOC_FAILED){
-					#ifndef DNDEBUG
+					#ifndef NDEBUG
 					printf("IsraeliQueueImprovePosition: dequeue failed");
 					#endif
 					IsraeliQueueDestroy(originalQueue);
@@ -520,7 +523,7 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 				}
 				int index=enqueueAndGetIndex(queue, currentObject, &errorFlag);
 				if (errorFlag==ISRAELIQUEUE_ALLOC_FAILED){
-					#ifndef DNDEBUG
+					#ifndef NDEBUG
 					printf("IsraeliQueueImprovePosition: enqueue failed");
 					#endif
 					IsraeliQueueDestroy(originalQueue);
@@ -531,10 +534,8 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue){
 				break;
 			}
 		}
-
 	}
-	//reset improved flags
-	for (int i=0; i<queue->m_size-1; i++){
+	for (int i=0; i<queue->m_size-1; i++){	//reset improved flags
 		queue->m_quotas[i].improved=false;
 	}
 	IsraeliQueueDestroy(originalQueue);
@@ -554,7 +555,7 @@ FriendshipFunction* getAllFriendshipFunctions(IsraeliQueue* queues) {
 
     FriendshipFunction* result = (FriendshipFunction*) malloc((totalSize + 1) * sizeof(FriendshipFunction));
     if (result == NULL) {
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("getAllFriendShipFunctions: malloc failed");
 		#endif
         return NULL;
@@ -577,7 +578,7 @@ FriendshipFunction* getAllFriendshipFunctions(IsraeliQueue* queues) {
 
 IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArray, ComparisonFunction compare){
 	if (queueArray==NULL || compare==NULL || *queueArray==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueMerge: queueArray or compare is NULL");
 		#endif
 		return NULL;
@@ -595,7 +596,7 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArray, ComparisonFunction comp
 	int geometricMeanOfRivalry=(int)ceil(pow((double)productOfRivalryThresholds, 1.0/count));
 	IsraeliQueue result=IsraeliQueueCreate(friendshipFunctions, compare, averageFriendship, geometricMeanOfRivalry);
 	if (result==NULL){
-		#ifndef DNDEBUG
+		#ifndef NDEBUG
 		printf("IsraeliQueueMerge: IsraeliQueueCreate failed");
 		#endif
 		return result;
@@ -607,13 +608,13 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArray, ComparisonFunction comp
 			if (queueArray[i]->m_size>1){
 				currentObject=IsraeliQueueDequeue(queueArray[i]);
 				if (currentObject==NULL){
-					#ifndef DNDEBUG
+					#ifndef NDEBUG
 					printf("IsraeliQueueMerge: IsraeliQueueDequeue failed");
 					#endif
 					return NULL;
 				}
 				if(IsraeliQueueEnqueue(result, currentObject)!=ISRAELIQUEUE_SUCCESS){
-					#ifndef DNDEBUG
+					#ifndef NDEBUG
 					printf("IsraeliQueueMerge: IsraeliQueueEnqueue failed");
 					#endif
 					return NULL;
@@ -625,3 +626,5 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArray, ComparisonFunction comp
 	result->m_objects[sizeOfNewQueue-1]=NULL;
 	return result;
 } 
+
+
