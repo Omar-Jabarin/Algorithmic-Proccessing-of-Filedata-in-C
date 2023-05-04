@@ -5,28 +5,17 @@
 
 EnrollmentSystem initEnrollment(char* students, char* courses, char* hackers, int flag) {
     FILE* fp_students = fopen(students, "r");
-    if (!fp_students) {
-        return NULL;
-    }
     FILE* fp_courses = fopen(courses, "r");
-    if (!courses) {
-        fclose(fp_students);
-        return NULL;
-    }
     FILE* fp_hackers = fopen(hackers, "r");
-    if (!fp_hackers) {
-        fclose(fp_students);
-        fclose(fp_courses);
-        return NULL;
-    }
-
-    EnrollmentSystem sys = createEnrollment(fp_students, fp_courses, fp_hackers);
-    if (!sys) {
+    if (!fp_students || !fp_courses || !fp_hackers) {
         fclose(fp_students);
         fclose(fp_courses);
         fclose(fp_hackers);
         return NULL;
     }
+    
+    EnrollmentSystem sys = createEnrollment(fp_students, fp_courses, fp_hackers);
+
     updateFriendshipFunction(sys, flag);
 
     fclose(fp_students);
@@ -53,16 +42,20 @@ int main(int argc, char** argv) {
     if (!sys) {
         return 1;
     }
+    
     FILE* fp_queues = fopen(argv[4 + flag], "r");
     if (!fp_queues) {
+        destroyEnrollment(sys);
         return 1;
     }
     
     sys = readEnrollment(sys, fp_queues);
     if (!sys) {
+        destroyEnrollment(sys);
         fclose(fp_queues);
         return 1;
     }
+    
     FILE* fp_target = fopen(argv[5 + flag], "w");
     if (!fp_target) {
         fclose(fp_queues);
@@ -74,6 +67,6 @@ int main(int argc, char** argv) {
     fclose(fp_queues);
     fclose(fp_target);
     destroyEnrollment(sys);
-
+    
     return 0;
 }

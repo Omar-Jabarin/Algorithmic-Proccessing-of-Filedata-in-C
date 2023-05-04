@@ -205,6 +205,15 @@ bool contains(LinkedList* node, int val) {
     return true;
 }
 
+int lenLinkedList(LinkedList* node) {
+    int i = 0;
+    while (node) {
+        node = node->next;
+        i++;
+    }
+    return i;
+}
+
 
 // Classes IMPL
 typedef struct {
@@ -345,7 +354,7 @@ void pushHackerToEnd(LinkedList** students, Student* hacker) {
     pushLinkedList(*students, v);
 }
 
-bool createProfile(LinkedList* students, char* buffer, const int BUFFER_SIZE, FILE* fp) { // push hackers to end of list
+bool createProfile(LinkedList* students, char* buffer, const int BUFFER_SIZE, FILE* fp) {
     HackerProfile* ptr = malloc(sizeof(HackerProfile));
     Student* hacker = findStudent(students, strToInt(buffer));
     if (!ptr || !hacker) {
@@ -561,6 +570,9 @@ EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hac
 }
 
 void updateFriendshipFunction(EnrollmentSystem sys, int lower_flag) {
+    if (!sys) {
+        return;
+    }
     LinkedList* course = sys->courses;
     while (course) {
         if (lower_flag) {
@@ -623,8 +635,7 @@ void printEnrollmentSystem(EnrollmentSystem sys) {
 
 void addHackerToCourses(LinkedList* courses, Student* hacker) {
     while (courses) {
-        if ((contains(hacker->profile->desired_courses, ((Course *)(courses->val.ptr))->id))\
-            && IsraeliQueueContains(((Course *)(courses->val.ptr))->queue, hacker) == 0) {
+        if (contains(hacker->profile->desired_courses, ((Course *)(courses->val.ptr))->id)) {
             IsraeliQueueEnqueue(((Course *)(courses->val.ptr))->queue, hacker);
         }
         courses = courses->next;
@@ -645,46 +656,55 @@ void writeCourseToFile(FILE* fp, Course* course) {
     fputs("\n", fp);
 }
 
-int lenLinkedList(LinkedList* node) {
-    int i = 0;
-    while (node) {
-        node = node->next;
-        i++;
-    }
-    return i;
-}
-
-Student* testHackerPositionQueues(Course* course, LinkedList* students) {
-    int queue_len = IsraeliQueueSize(course->queue);
+int testHackerPositionQueue(Student* hacker, Course* course) {
+    int len_queue = IsraeliQueueSize(course->queue);
     IsraeliQueue queue_clone = IsraeliQueueClone(course->queue);
     Student* temp;
-    for (int i = 1; i <= queue_len; i++) {
+    for (int i = 1; i <= len_queue; i++) {
         temp = IsraeliQueueDequeue(queue_clone);
-        if (i >= course->size && temp->profile) {
-            (temp->profile->failed_courses)++;
-            if (temp->profile->failed_courses >= fmin(2, lenLinkedList(temp->profile->desired_courses))){
-                IsraeliQueueDestroy(queue_clone);
-                return temp;
-            }
+        if (temp->id == hacker->id) {
+            IsraeliQueueDestroy(queue_clone);
+            return (i >= course->size);
         }
     }
     IsraeliQueueDestroy(queue_clone);
-    return NULL;
+    return 0;
+}
+
+int testHackerPosition(Student* hacker, LinkedList* courses) {
+    if (!(hacker->profile)) {
+        return 0;
+    }
+    int i = 0;
+    while (courses) {
+        i += testHackerPositionQueue(hacker, (Course *)courses->val.ptr);
+        courses = courses->next;
+    }
+    return (i >= fmin(2, lenLinkedList(hacker->profile->desired_courses)));
 }
 
 Student* testHackerPositions(LinkedList* courses, LinkedList* students) {
-    while (courses) {
-        Student* hackerFailed = testHackerPositionQueues(((Course *)courses->val.ptr), students);
-        if (hackerFailed) {
-            return hackerFailed;
+    while (students) {
+        if (testHackerPosition(students->val.ptr, courses)) {
+            return students->val.ptr;
         }
-        courses = courses->next;
+        students = students->next;
     }
     return NULL;
+
+    // while (courses) {
+    //     Student* hackerFailed = testHackerPositionQueues(((Course *)courses->val.ptr), students);
+    //     if (hackerFailed) {
+    //         return hackerFailed;
+    //     }
+    //     courses = courses->next;
+    // }
+    // return NULL;
 }
 
 void hackEnrollment(EnrollmentSystem sys, FILE* out) {
     LinkedList* students = sys->students;
+    
     while (students) {
         if (((Student *)(students->val.ptr))->profile) {
             addHackerToCourses(sys->courses, (Student *)(students->val.ptr));
@@ -706,9 +726,11 @@ void hackEnrollment(EnrollmentSystem sys, FILE* out) {
 }
 
 void destroyEnrollment(EnrollmentSystem sys) {
-    destroyStudents(sys->students);
-    destroyCourses(sys->courses);
-    free(sys);
+    if (sys) {
+        destroyStudents(sys->students);
+        destroyCourses(sys->courses);
+        free(sys);
+    }
 }
 
 
