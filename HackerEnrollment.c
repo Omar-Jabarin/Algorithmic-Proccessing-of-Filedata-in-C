@@ -529,7 +529,7 @@ typedef struct {
 
 EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hackers_fp) {
     const int FRIENDSHIP_TH = 20;
-    const int RIVALRY_TH = -10;
+    const int RIVALRY_TH = 0;
     EnrollmentSystem sys = malloc(sizeof(EnrollmentSystem_t));
     if (!sys) {
         return NULL;
