@@ -2,10 +2,10 @@ CC = gcc
 OBJS = IsraeliQueue.o HackerEnrollment.o HackEnrollment.o
 EXEC = prog
 DEBUG_FLAG = # now empty, assign -g for debug
-COMP_FLAG = -std=c99 -Wall -Werror
+COMP_FLAG = -std=c99 -Wall -Werror -DNDEBUG
 
 $(EXEC) : $(OBJS)
-	$(CC) $(DEBUG_FLAG) $(OBJS) -o $@
+	$(CC) $(DEBUG_FLAG) $(OBJS) -o $@ -lm
 HackEnrollment.o: HackEnrollment.c HackerEnrollment.h
 	$(CC) -c $(DEBUG_FLAG) $(COMP_FLAG) $*.c
 HackerEnrollment.o: HackerEnrollment.c IsraeliQueue.h
