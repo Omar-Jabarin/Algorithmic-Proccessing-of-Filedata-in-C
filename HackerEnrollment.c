@@ -654,18 +654,14 @@ void hackEnrollment(EnrollmentSystem sys, FILE* out) {
         }
         students = students->next;
     }
-    LinkedList* courses = sys->courses;
-    while (courses) {
-        IsraeliQueueImprovePositions(((Course *)(courses->val.ptr))->queue);
-        courses = courses->next;
-    }
+    
     Student* hackerFailed = testHackerPositions(sys->courses, sys->students);
     if (hackerFailed) {
         fprintf(out, "Cannot satisfy constraints for %d", hackerFailed->id);
         return;
     }
     
-    courses = sys->courses;
+    LinkedList* courses = sys->courses;
     while (courses) {
         writeCourseToFile(out, (Course *)(courses->val.ptr));
         courses = courses->next;
