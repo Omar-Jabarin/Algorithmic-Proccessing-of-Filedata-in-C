@@ -507,20 +507,6 @@ int friendshipRivalryFunction(void* a, void* b) {
     return 0;
 }
 
-f_ptr* createFriendshipFunctions() {
-    f_ptr* friendship_functions = malloc(3*sizeof(f_ptr));
-    if (!friendship_functions) {
-        return NULL;
-    }
-
-    friendship_functions[0] = friendshipFunctionID;
-    friendship_functions[1] = friendshipRivalryFunction;
-    friendship_functions[2] = NULL;
-
-    return friendship_functions;
-}
-
-
 // EnrollmentSystem IMPL
 typedef struct {
     LinkedList* courses;
@@ -549,12 +535,13 @@ EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hac
         destroyCourses(sys->courses);
         return NULL;
     }
-    f_ptr* friendship_functions = createFriendshipFunctions();
+    f_ptr* friendship_functions = malloc(sizeof(f_ptr));
     if (!friendship_functions) {
         destroyStudents(sys->students);
         destroyCourses(sys->courses);
         return NULL;
     }
+    friendship_functions[0] = NULL;
 
     LinkedList* courses = sys->courses;
     while (courses) {
@@ -575,6 +562,8 @@ void updateFriendshipFunction(EnrollmentSystem sys, int lower_flag) {
     }
     LinkedList* course = sys->courses;
     while (course) {
+        IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipFunctionID);
+        IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipRivalryFunction);
         if (lower_flag) {
             IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipFunctionLowercase);
         } else {
@@ -608,6 +597,9 @@ bool parseQueue(char* str, LinkedList* courses, LinkedList* students) {
 void printEnrollmentSystem(EnrollmentSystem sys);
 
 EnrollmentSystem readEnrollment(EnrollmentSystem sys, FILE* queue) {
+    if (!sys) {
+        return NULL;
+    }
     const int BUFFER_SIZE = getMaxRowLen(queue);
 
     char* buffer = malloc(sizeof(char)*BUFFER_SIZE);
