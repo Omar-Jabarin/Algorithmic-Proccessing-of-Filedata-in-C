@@ -649,7 +649,7 @@ int testHackerPositionQueue(Student* hacker, Course* course) {
     int len_queue = IsraeliQueueSize(course->queue);
     IsraeliQueue queue_clone = IsraeliQueueClone(course->queue);
     Student* temp;
-    for (int i = 1; i <= len_queue; i++) {
+    for (int i = 0; i < len_queue; i++) {
         temp = IsraeliQueueDequeue(queue_clone);
         if (temp->id == hacker->id) {
             IsraeliQueueDestroy(queue_clone);
