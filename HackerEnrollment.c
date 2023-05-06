@@ -33,7 +33,7 @@ char getChar(char* str, int i, char mode) {
         return 0;
     }
     if ('A' <= str[i] && str[i] <= 'Z' && mode == 'l') {
-        return str[i] - 'a' + 'A';
+        return str[i] - 'A' + 'a';
     }
     return str[i];
 }
@@ -594,8 +594,6 @@ bool parseQueue(char* str, LinkedList* courses, LinkedList* students) {
     return true;
 }
 
-void printEnrollmentSystem(EnrollmentSystem sys);
-
 EnrollmentSystem readEnrollment(EnrollmentSystem sys, FILE* queue) {
     if (!sys) {
         return NULL;
@@ -606,7 +604,6 @@ EnrollmentSystem readEnrollment(EnrollmentSystem sys, FILE* queue) {
     if (!buffer) {
         return NULL;
     }
-    printEnrollmentSystem(sys);
     while (fgets(buffer, BUFFER_SIZE, queue)) {
         if (parseQueue(buffer, sys->courses, sys->students) == false) {
             free(buffer);
