@@ -33,7 +33,7 @@ char getChar(char* str, int i, char mode) {
         return 0;
     }
     if ('A' <= str[i] && str[i] <= 'Z' && mode == 'l') {
-        return str[i] - 'a' + 'A';
+        return str[i] - 'A' + 'a';
     }
     return str[i];
 }
@@ -594,8 +594,6 @@ bool parseQueue(char* str, LinkedList* courses, LinkedList* students) {
     return true;
 }
 
-void printEnrollmentSystem(EnrollmentSystem sys);
-
 EnrollmentSystem readEnrollment(EnrollmentSystem sys, FILE* queue) {
     if (!sys) {
         return NULL;
@@ -606,7 +604,6 @@ EnrollmentSystem readEnrollment(EnrollmentSystem sys, FILE* queue) {
     if (!buffer) {
         return NULL;
     }
-    printEnrollmentSystem(sys);
     while (fgets(buffer, BUFFER_SIZE, queue)) {
         if (parseQueue(buffer, sys->courses, sys->students) == false) {
             free(buffer);
@@ -652,7 +649,7 @@ int testHackerPositionQueue(Student* hacker, Course* course) {
     int len_queue = IsraeliQueueSize(course->queue);
     IsraeliQueue queue_clone = IsraeliQueueClone(course->queue);
     Student* temp;
-    for (int i = 1; i <= len_queue; i++) {
+    for (int i = 0; i < len_queue; i++) {
         temp = IsraeliQueueDequeue(queue_clone);
         if (temp->id == hacker->id) {
             IsraeliQueueDestroy(queue_clone);
