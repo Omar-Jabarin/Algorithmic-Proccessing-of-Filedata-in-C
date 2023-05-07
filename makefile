@@ -6,6 +6,8 @@ COMP_FLAG = -std=c99 -Wall -Werror
 
 $(EXEC) : $(OBJS)
 	$(CC) $(DEBUG_FLAG) $(OBJS) -o $@
+debug : $(OBJS)
+	gcc -o HackEnrollment -g -std=c99 -Wall -Werror -pedantic-errors -DNDEBUG -lm *.c
 HackEnrollment.o: HackEnrollment.c HackerEnrollment.h
 	$(CC) -c $(DEBUG_FLAG) $(COMP_FLAG) $*.c
 HackerEnrollment.o: HackerEnrollment.c IsraeliQueue.h
