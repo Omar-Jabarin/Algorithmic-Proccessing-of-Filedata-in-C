@@ -6,6 +6,8 @@ COMP_FLAG = -std=c99 -Wall -Werror
 
 $(EXEC) : $(OBJS)
 	$(CC) $(DEBUG_FLAG) $(OBJS) -o $@
+valgrind : debug $(OBJS)
+	valgrind --leak-check=full ./HackEnrollment students.txt courses.txt hackers.txt queues.txt myout.txt
 debug : $(OBJS)
 	gcc -o HackEnrollment -g -std=c99 -Wall -Werror -pedantic-errors -DNDEBUG -lm *.c
 HackEnrollment.o: HackEnrollment.c HackerEnrollment.h
