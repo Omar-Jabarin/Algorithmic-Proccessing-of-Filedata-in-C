@@ -20,7 +20,10 @@ int strToInt(char* str) {
 }
 
 char* copyStr(char* str) {
-    char* copy = malloc(sizeof(char)*strlen(str));
+    if (!str || strlen(str) == 0) {
+        return NULL;
+    }
+    char* copy = malloc(sizeof(char)*(strlen(str)+1));
     if (!copy) {
         return NULL;
     }
@@ -38,7 +41,7 @@ char getChar(char* str, int i, char mode) {
     return str[i];
 }
 
-int ascii_difference(char* str1, char* str2, char mode) {
+int asciiDistance(char* str1, char* str2, char mode) {
     int rv = 0;
     for (int i = 0; i < fmax(strlen(str1), strlen(str2)); i++) {
         rv += abs(getChar(str1, i, mode) - getChar(str2, i, mode));
@@ -47,38 +50,38 @@ int ascii_difference(char* str1, char* str2, char mode) {
 }
 
 int getNumRows(FILE* fp) {
-    int num_rows = 1;
+    int counter = 1;
 
     char c = fgetc(fp);
     while (c != EOF) {
         if (c == '\n') {
-            num_rows++;
+            counter++;
         }
         c = fgetc(fp);
     }
 
     fseek(fp, 0, SEEK_SET);
-    return num_rows;
+    return counter;
 }
 
 int getMaxRowLen(FILE* fp) {
-    int max_len = 0;
+    int maxLen = 0;
     int temp = 0;
 
     char c = fgetc(fp);
     while (c != EOF) {
         if (c == '\n') {
-            max_len = (max_len > temp) ? max_len : temp;
+            maxLen = (maxLen > temp) ? maxLen : temp;
             temp = 0;
         } else {
             temp++;
         }
         c = fgetc(fp);
     }
-    max_len = (max_len > temp) ? max_len : temp;
+    maxLen = (maxLen > temp) ? maxLen : temp;
 
     fseek(fp, 0, SEEK_SET);
-    return max_len+2; // for some reason createStudents works only if I add 2 here
+    return maxLen+2;
 }
 
 
@@ -119,10 +122,9 @@ void destroyLinkedList(LinkedList* node) {
     if (!node) {
         return;
     }
-    if (node->next) {
-        destroyLinkedList(node->next);
-    }
-    free(node->next);
+    LinkedList* temp = node->next;
+    free(node);
+    destroyLinkedList(temp);
 }
 
 LinkedList* pushLinkedList(LinkedList* node, ValType val) {
@@ -220,7 +222,6 @@ typedef struct {
     LinkedList* desired_courses;
     LinkedList* friends;
     LinkedList* rivals;
-    int failed_courses;
 } HackerProfile;
 
 typedef struct {
@@ -253,6 +254,7 @@ Student* createStudent(char* str) {
 
     ptr->name = copyStr(token);
     if (!(ptr->name)) {
+        free(ptr);
         return NULL;
     }
 
@@ -260,6 +262,7 @@ Student* createStudent(char* str) {
     ptr->surname = copyStr(token);
     if (!(ptr->surname)) {
         free(ptr->name);
+        free(ptr);
         return NULL;
     }
 
@@ -282,11 +285,11 @@ void destroyStudent(Student* ptr) {
 
 void destroyStudents(LinkedList* students) {
     LinkedList* temp = students;
-    while (!temp) {
-        destroyStudent((Student *)students->val.ptr);
-        temp = students->next;
-        free(students);
+    while (temp) {
+        destroyStudent((Student *)(temp->val.ptr));
+        temp = temp->next;
     }
+    destroyLinkedList(students);
 }
 
 Course* createCourse(char* str) {
@@ -314,11 +317,11 @@ void destroyCourse(Course* ptr) {
 
 void destroyCourses(LinkedList* courses) {
     LinkedList* temp = courses;
-    while (!temp) {
-        destroyCourse((Course *)courses->val.ptr);
-        temp = courses->next;
-        free(courses);
+    while (temp) {
+        destroyCourse((Course *)(temp->val.ptr));
+        temp = temp->next;
     }
+    destroyLinkedList(courses);
 }
 
 Student* findStudent(LinkedList* students, int id) {
@@ -368,7 +371,6 @@ bool createProfile(LinkedList* students, char* buffer, const int BUFFER_SIZE, FI
     ptr->friends = parseLinkedList(buffer, strToInt);
     fgets(buffer, BUFFER_SIZE, fp);
     ptr->rivals = parseLinkedList(buffer, strToInt);
-    ptr->failed_courses = 0;
 
     hacker->profile = ptr;
     return true;
@@ -383,6 +385,7 @@ bool updateHackers(LinkedList* students, FILE* fp) {
     while (fgets(buffer, BUFFER_SIZE, fp)) {
         createProfile(students, buffer, BUFFER_SIZE, fp);
     }
+    free(buffer);
     return true;
 }
 
@@ -439,9 +442,9 @@ void printCourse(Course* course) {
     }
 }
 
-void printLinkedListClass(LinkedList* node, void (*print_func)(void *)) {
+void printLinkedListClass(LinkedList* node, void (*printFunction)(void *)) {
     while (node) {
-        print_func(node->val.ptr);
+        printFunction(node->val.ptr);
         node = node->next;
     }
 }
@@ -471,7 +474,7 @@ int friendshipFunctionUppercase (void* a, void* b) {
     if (!(ta->profile) && !(tb->profile)) {
         return 0;
     }
-    return ascii_difference(ta->name, tb->name, 'u') + ascii_difference(ta->surname, tb->surname, 'u');
+    return asciiDistance(ta->name, tb->name, 'u') + asciiDistance(ta->surname, tb->surname, 'u');
 }
 
 int friendshipFunctionLowercase (void* a, void* b) {
@@ -480,7 +483,7 @@ int friendshipFunctionLowercase (void* a, void* b) {
     if (!(ta->profile) && !(tb->profile)) {
         return 0;
     }
-    return ascii_difference(ta->name, tb->name, 'l') + ascii_difference(ta->surname, tb->surname, 'l');
+    return asciiDistance(ta->name, tb->name, 'l') + asciiDistance(ta->surname, tb->surname, 'l');
 }
 
 int friendshipRivalryFunction(void* a, void* b) {
@@ -535,28 +538,28 @@ EnrollmentSystem createEnrollment(FILE* students_fp, FILE* courses_fp, FILE* hac
         destroyCourses(sys->courses);
         return NULL;
     }
-    f_ptr* friendship_functions = malloc(sizeof(f_ptr));
-    if (!friendship_functions) {
+    f_ptr* friendshipFunctions = malloc(sizeof(f_ptr));
+    if (!friendshipFunctions) {
         destroyStudents(sys->students);
         destroyCourses(sys->courses);
         return NULL;
     }
-    friendship_functions[0] = NULL;
+    friendshipFunctions[0] = NULL;
 
     LinkedList* courses = sys->courses;
     while (courses) {
-        ((Course *)(courses->val.ptr))->queue = IsraeliQueueCreate(friendship_functions, comparisonFunction, FRIENDSHIP_TH, RIVALRY_TH);
+        ((Course *)(courses->val.ptr))->queue = IsraeliQueueCreate(friendshipFunctions, comparisonFunction, FRIENDSHIP_TH, RIVALRY_TH);
         if (!(((Course *)(courses->val.ptr))->queue)) {
-            free(friendship_functions);
+            free(friendshipFunctions);
             return NULL;
         }
         courses = courses->next;
     }
-    free(friendship_functions);
+    free(friendshipFunctions);
     return sys;
 }
 
-void updateFriendshipFunction(EnrollmentSystem sys, int lower_flag) {
+void updateFriendshipFunction(EnrollmentSystem sys, int lowerFlag) {
     if (!sys) {
         return;
     }
@@ -564,7 +567,7 @@ void updateFriendshipFunction(EnrollmentSystem sys, int lower_flag) {
     while (course) {
         IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipFunctionID);
         IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipRivalryFunction);
-        if (lower_flag) {
+        if (lowerFlag) {
             IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipFunctionLowercase);
         } else {
             IsraeliQueueAddFriendshipMeasure(((Course *)(course->val.ptr))->queue, friendshipFunctionUppercase);
@@ -632,13 +635,13 @@ void addHackerToCourses(LinkedList* courses, Student* hacker) {
 }
 
 void writeCourseToFile(FILE* fp, Course* course) {
-    int len_queue = IsraeliQueueSize(course->queue);
-    if (len_queue == 0) {
+    int lenQueue = IsraeliQueueSize(course->queue);
+    if (lenQueue == 0) {
         return;
     }
     fprintf(fp, "%d", course->id);
     Student* temp;
-    for (int i = 0; i < len_queue; i++) {
+    for (int i = 0; i < lenQueue; i++) {
         temp = IsraeliQueueDequeue(course->queue);
         fprintf(fp, " %d", temp->id);
     }
@@ -646,17 +649,17 @@ void writeCourseToFile(FILE* fp, Course* course) {
 }
 
 int testHackerPositionQueue(Student* hacker, Course* course) {
-    int len_queue = IsraeliQueueSize(course->queue);
-    IsraeliQueue queue_clone = IsraeliQueueClone(course->queue);
+    int lenQueue = IsraeliQueueSize(course->queue);
+    IsraeliQueue queueClone = IsraeliQueueClone(course->queue);
     Student* temp;
-    for (int i = 0; i < len_queue; i++) {
-        temp = IsraeliQueueDequeue(queue_clone);
+    for (int i = 0; i < lenQueue; i++) {
+        temp = IsraeliQueueDequeue(queueClone);
         if (temp->id == hacker->id) {
-            IsraeliQueueDestroy(queue_clone);
+            IsraeliQueueDestroy(queueClone);
             return (i >= course->size);
         }
     }
-    IsraeliQueueDestroy(queue_clone);
+    IsraeliQueueDestroy(queueClone);
     return 0;
 }
 
@@ -721,21 +724,3 @@ void destroyEnrollment(EnrollmentSystem sys) {
         free(sys);
     }
 }
-
-
-
-
-// int main() {
-//     FILE* students = fopen("students.txt","r");
-//     FILE* courses = fopen("courses.txt", "r");
-//     FILE* hackers = fopen("hackers.txt", "r");
-
-//     EnrollmentSystem sys = createEnrollment(students, courses, hackers);
-//     initQueues(&sys, 'u'); // STOPS HERE
-//     FILE* queues = fopen("queues.txt", "r");
-//     readEnrollment(sys, queues);
-//     FILE* target = fopen("out.txt", "w");
-//     hackEnrollment(sys, target);
-//     FILE* flag = fopen("flag.txt", "w");
-//     fputs("FINISHED", flag);
-// }
