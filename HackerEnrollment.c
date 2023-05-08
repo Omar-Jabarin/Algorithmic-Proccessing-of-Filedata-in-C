@@ -649,6 +649,9 @@ void writeCourseToFile(FILE* fp, Course* course) {
 }
 
 int testHackerPositionQueue(Student* hacker, Course* course) {
+    if (!(contains(hacker->profile->desired_courses, course->id))) {
+        return 0;
+    }
     int lenQueue = IsraeliQueueSize(course->queue);
     IsraeliQueue queueClone = IsraeliQueueClone(course->queue);
     Student* temp;
@@ -667,12 +670,14 @@ int testHackerPosition(Student* hacker, LinkedList* courses) {
     if (!(hacker->profile)) {
         return 0;
     }
-    int i = 0;
+    int failed = 0;
     while (courses) {
-        i += testHackerPositionQueue(hacker, (Course *)courses->val.ptr);
+        failed += testHackerPositionQueue(hacker, (Course *)courses->val.ptr);
         courses = courses->next;
     }
-    return (i >= fmin(2, lenLinkedList(hacker->profile->desired_courses)));
+    int desired = lenLinkedList(hacker->profile->desired_courses);
+
+    return (failed > desired - fmin(2, desired));
 }
 
 Student* testHackerPositions(LinkedList* courses, LinkedList* students) {
