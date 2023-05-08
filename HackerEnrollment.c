@@ -670,6 +670,9 @@ int testHackerPosition(Student* hacker, LinkedList* courses) {
     if (!(hacker->profile)) {
         return 0;
     }
+    if (!(hacker->profile->desired_courses)) {
+        return 0;
+    }
     int failed = 0;
     while (courses) {
         failed += testHackerPositionQueue(hacker, (Course *)courses->val.ptr);
