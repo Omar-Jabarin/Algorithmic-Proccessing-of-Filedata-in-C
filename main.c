@@ -29,7 +29,8 @@ EnrollmentSystem initEnrollment(char* students, char* courses, char* hackers) {
     return sys;
 }
 
-int flagCheck(int argc, char** argv) {
+// Checks validity of input and returns true iff "-i" flag is present.
+int argCheck(int argc, char** argv) {
     if (argc < 6 || argc > 7) {
         return -1;
     }
@@ -45,7 +46,7 @@ int flagCheck(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-    int flag = flagCheck(argc, argv);
+    int flag = argCheck(argc, argv);
     if (flag == -1) {
         return 1;
     }
