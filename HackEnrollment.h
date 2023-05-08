@@ -1,5 +1,5 @@
-#ifndef PROVIDED_HACKERENROLLMENT_H
-#define PROVIDED_HACKERENROLLMENT_H
+#ifndef PROVIDED_HACKENROLLMENT_H
+#define PROVIDED_HACKENROLLMENT_H
 
 typedef struct EnrollmentSystem_t *EnrollmentSystem;
 
