@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "HackerEnrollment.h"
+#include "HackEnrollment.h"
 
 EnrollmentSystem initEnrollment(char* students, char* courses, char* hackers) {
     FILE* fp_students = fopen(students, "r");
