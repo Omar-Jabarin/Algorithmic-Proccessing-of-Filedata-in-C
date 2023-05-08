@@ -32,6 +32,7 @@ char* copyStr(char* str) {
 }
 
 char getChar(char* str, int i, char mode) {
+    // If mode == l, returns as if the string is lowercase.
     if (i >= strlen(str)) {
         return 0;
     }
@@ -42,6 +43,7 @@ char getChar(char* str, int i, char mode) {
 }
 
 int asciiDistance(char* str1, char* str2, char mode) {
+    // If mode == l, calculates as if strings are lowercase.
     int rv = 0;
     for (int i = 0; i < fmax(strlen(str1), strlen(str2)); i++) {
         rv += abs(getChar(str1, i, mode) - getChar(str2, i, mode));
@@ -86,6 +88,7 @@ int getMaxRowLen(FILE* fp) {
 
 
 // ValType IMPL
+// Used in order for linkedList to not have pointers to ints.
 typedef union {
     int i;
     void* ptr;
@@ -194,7 +197,7 @@ void printReversedLinkedList(LinkedList* node, const char* format, const char* s
     }
 }
 
-bool contains(LinkedList* node, int val) {
+bool containsLinkedList(LinkedList* node, int val) {
     if (!node) {
         return false;
     }
@@ -228,7 +231,7 @@ typedef struct {
     int id;
     char* name;
     char* surname;
-    HackerProfile* profile;
+    HackerProfile* profile; // NULL if not hacker
 } Student;
 
 typedef struct {
@@ -492,18 +495,18 @@ int friendshipRivalryFunction(void* a, void* b) {
     const int FRIENDSHIP_RV = 20;
     const int RIVALRY_RV = -20;
     if (ta->profile) {
-        if (contains(ta->profile->friends, tb->id)) {
+        if (containsLinkedList(ta->profile->friends, tb->id)) {
             return FRIENDSHIP_RV;
         }
-        if (contains(ta->profile->rivals, tb->id)) {
+        if (containsLinkedList(ta->profile->rivals, tb->id)) {
             return RIVALRY_RV;
         }
     }
     if (tb->profile) {
-        if (contains(tb->profile->friends, ta->id)) {
+        if (containsLinkedList(tb->profile->friends, ta->id)) {
             return FRIENDSHIP_RV;
         }
-        if (contains(tb->profile->rivals, ta->id)) {
+        if (containsLinkedList(tb->profile->rivals, ta->id)) {
             return RIVALRY_RV;
         }
     }
@@ -627,7 +630,7 @@ void printEnrollmentSystem(EnrollmentSystem sys) {
 
 void addHackerToCourses(LinkedList* courses, Student* hacker) {
     while (courses) {
-        if (contains(hacker->profile->desired_courses, ((Course *)(courses->val.ptr))->id)) {
+        if (containsLinkedList(hacker->profile->desired_courses, ((Course *)(courses->val.ptr))->id)) {
             IsraeliQueueEnqueue(((Course *)(courses->val.ptr))->queue, hacker);
         }
         courses = courses->next;
@@ -649,7 +652,7 @@ void writeCourseToFile(FILE* fp, Course* course) {
 }
 
 int testHackerPositionQueue(Student* hacker, Course* course) {
-    if (!(contains(hacker->profile->desired_courses, course->id))) {
+    if (!(containsLinkedList(hacker->profile->desired_courses, course->id))) {
         return 0;
     }
     int lenQueue = IsraeliQueueSize(course->queue);
@@ -691,15 +694,6 @@ Student* testHackerPositions(LinkedList* courses, LinkedList* students) {
         students = students->next;
     }
     return NULL;
-
-    // while (courses) {
-    //     Student* hackerFailed = testHackerPositionQueues(((Course *)courses->val.ptr), students);
-    //     if (hackerFailed) {
-    //         return hackerFailed;
-    //     }
-    //     courses = courses->next;
-    // }
-    // return NULL;
 }
 
 void hackEnrollment(EnrollmentSystem sys, FILE* out) {
