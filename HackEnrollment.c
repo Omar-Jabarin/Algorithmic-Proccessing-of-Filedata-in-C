@@ -714,7 +714,7 @@ void hackEnrollment(EnrollmentSystem sys, FILE* out) {
     
     Student* hackerFailed = testHackerPositions(sys->courses, sys->students);
     if (hackerFailed) {
-        fprintf(out, "Cannot satisfy constraints for %d", hackerFailed->id);
+        fprintf(out, "Cannot satisfy constraints for %d\n", hackerFailed->id);
         return;
     }
     
