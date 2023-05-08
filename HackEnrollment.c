@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <math.h>
-#include "IsraeliQueue.h"
+#include <IsraeliQueue.h>
 
 
 // Auxiliary Functions
