@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <IsraeliQueue.h>
+#include "IsraeliQueue.h"
 #include <assert.h>
 #include <string.h>
 #include <math.h>
@@ -223,37 +223,46 @@ void IsraeliQueueDestroy(IsraeliQueue queue){
 	return;
 }
 
+static bool isAvailableFriend(IsraeliQueue queue, void* secondObject, int i){
+  return ((checkRelation(queue->m_friendshipFunctions, queue->m_objects[i],
+			secondObject, queue->m_friendshipThreshold, queue->m_rivalryThreshold)==FRIEND)
+		 	&& (queue->m_quotas[i].m_friendshipQuota<FRIEND_QUOTA));
+
+}
+
+static bool isAvailableRival(IsraeliQueue queue, void* secondObject, int j){
+  return ((checkRelation(queue->m_friendshipFunctions, queue->m_objects[j],
+			secondObject, queue->m_friendshipThreshold, queue->m_rivalryThreshold)==RIVAL)
+		 	&& (queue->m_quotas[j].m_rivalryQuota<RIVAL_QUOTA));
+
+}
 
 void checkInsertLocation(IsraeliQueue queue, void* object, int *friendLocation,
-														 bool *skippedToFriend){
-	bool blocked=false;
-		for (int i=0; i<((queue->m_size)-1); i++){
-	*friendLocation=UNINITIALIZED;
-	*skippedToFriend=false, blocked=false;
-		if(checkRelation(queue->m_friendshipFunctions, queue->m_objects[i],
-		 				object, queue->m_friendshipThreshold, queue->m_rivalryThreshold)==FRIEND){
-			if (queue->m_quotas[i].m_friendshipQuota<FRIEND_QUOTA){
-				for(int j=i+1; j<((queue->m_size)-1);  j++){
-					if (checkRelation(queue->m_friendshipFunctions, queue->m_objects[j],
-					 object, queue->m_friendshipThreshold, queue->m_rivalryThreshold)==RIVAL){
-						if (queue->m_quotas[j].m_rivalryQuota<RIVAL_QUOTA){
-							queue->m_quotas[j].m_rivalryQuota++;
-							i=j;
-							blocked=true; //j is the index of the current blocking rival
-							break;
-						}
-					}
-				}	
-					if (!(blocked)){
-					*friendLocation=i; 
-					*skippedToFriend=true;
-					queue->m_quotas[*friendLocation].m_friendshipQuota++;
-					break;
-					}
-			}
-		}
-	}		
+                         bool *skippedToFriend){
+    bool blocked=false;
+
+    for (int i=0; i<((queue->m_size)-1); i++){ //iterates from beginning to end searching for a friend
+        *friendLocation=UNINITIALIZED;
+        *skippedToFriend=false, blocked=false;
+        if(isAvailableFriend(queue, object, i)){ //A friend is found at index i which didn't exceed quota
+            for(int j=i+1; j<((queue->m_size)-1);  j++){ // Checks if there is a rival behind the friend
+                if (isAvailableRival(queue, object, j)){ //A rival is found at index j which didn't exceed quota
+                    queue->m_quotas[j].m_rivalryQuota++;
+                    i=j; //Changes i to j so the search for next friend is behind the blocking rival.
+                    blocked=true;
+                    break;
+                }
+            }
+            if (!(blocked)){ // If a friend is found and no block occured, insert object behind friend and quit
+                *friendLocation=i; 
+                *skippedToFriend=true;
+                queue->m_quotas[*friendLocation].m_friendshipQuota++;
+                break;
+            }
+        }
+    }
 }
+
 
 
 void insertObject(IsraeliQueue queue, void* object, int* friendLocation, bool* skippedToFriend, bool improving){
@@ -633,3 +642,131 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArray, ComparisonFunction comp
 	return result;
 } 
 
+
+int comparison_function_mock(void *obj1, void *obj2) {
+    int id1 = *(int *)obj1;
+    int id2 = *(int *)obj2;
+
+    return !(id1 - id2); /* Fixed this function, should return 1 now if the objects are the same and 0 if they're different.
+			  Anyway, the functions in this test are only useful for testing the first, IsraeliQueue.c part*/
+}
+
+
+int oddEvenFriendshipFunction(void* firstObject, void* secondObject){
+	/* In this test after we initialize the queue we enqueue even numbers so the parity practically
+	depends only on the object already in the queue. We define the friendship threshold to be 3
+	and rivalry threshold to be -1 */
+
+	if (((*(int*)firstObject)+(*(int*)secondObject))%2==0){
+		return 4; /* 4 is over the friendship threshold(=3), which means if the first object is even
+					the enqueued object is always his friend */
+	}
+
+	else {
+		return -2; /* -2 is under the rivalry threshhold(=-1), which means if the first object is odd
+					the enqueued object is always his rival */
+					
+	}
+
+
+}
+
+int main(){
+	FriendshipFunction functions[]={NULL};
+	IsraeliQueue nullTester=IsraeliQueueCreate(functions, comparison_function_mock, 1, 1);
+	void *nullptr;
+
+	IsraeliQueueEnqueue(nullTester, NULL);
+	IsraeliQueueEnqueue(nullTester, NULL);
+	IsraeliQueueEnqueue(nullTester, NULL);
+	nullptr=IsraeliQueueDequeue(nullTester);
+	nullptr=IsraeliQueueDequeue(nullTester);
+	nullptr=IsraeliQueueDequeue(nullTester);
+	
+	printf("%p", nullptr);
+	// test 1
+
+	/* iterations: 
+	1 2 3 4 5 6 7 8 9 10 11 12 <-original
+	1 12 2 3 4 5 6 7 8 9 10 11
+	1 11 12 2 3 4 5 6 7 8 9 10
+	1 10 11 12 2 3 4 5 6 7 8 9
+	1 9 10 11 12 2 3 4 5 6 7 8
+	1 8 9 10 11 12 2 3 4 5 6 7
+	1 8 7 9 10 11 12 2 3 4 5 6
+	1 8 6 7 9 10 11 12 2 3 4 5
+	1 8 5 6 7 9 10 11 12 2 3 4
+	1 8 4 5 6 7 9 10 11 12 2 3
+	1 8 3 4 5 6 7 9 10 11 12 2
+	1 8 3 2 4 5 6 7 9 10 11 12
+	8 3 1 2 4 5 6 7 9 10 11 12
+	
+	 */ /*
+	int arr[]={1,2,3,4,5,6,7,8,9,10,11,12};
+	FriendshipFunction functions[]={NULL};
+	IsraeliQueue queue=IsraeliQueueCreate(functions, comparison_function_mock, 0, 0);
+	
+	for (int i=0; i<12; i++){
+		IsraeliQueueEnqueue(queue, &arr[i]);
+		
+	}
+	IsraeliQueueAddFriendshipMeasure(queue, mockfriendshipfunction);
+	IsraeliQueueImprovePositions(queue);
+	printf("Test1:\nYour output: ");
+	for (int i=0; i<12; i++){
+		int s=*(int*)IsraeliQueueDequeue(queue);
+		printf("%d ", s);
+	}
+	printf("\nExpected:    8 3 1 2 4 5 6 7 9 10 11 12\n");
+	IsraeliQueueDestroy(queue);
+*/
+	// test 2
+	/*iterations:
+	1:  *4
+	2:  4 *3
+	3:  4 *4 3
+	4:  4 *1 4 3
+	5:  4 *3 1 4 3
+	6:  4 *4 3 1 4 3
+	7:  4 4 *2 3 1 4 3
+	8:  4 4 *2 2 3 1 4 3
+	9:  4 4 *3 2 2 3 1 4 3
+	10: 4 4 *1 3 2 2 3 1 4 3
+	11: 4 4 *4 1 3 2 2 3 1 4 3
+	12: 4 4 4 *5 1 3 2 2 3 1 4 3
+	
+	
+	*/
+/*
+	queue=IsraeliQueueCreate(functions, comparison_function_mock, 0, 0);
+	for (int i=0; i<4; i++){
+		IsraeliQueueEnqueue(queue, &arr[i]);
+	}
+	IsraeliQueue p=IsraeliQueueClone(queue);
+	IsraeliQueueImprovePositions(queue);
+	int *five=malloc(sizeof(int));
+	*five=5;
+	IsraeliQueueEnqueue(queue, five);
+	IsraeliQueue s=IsraeliQueueClone(p);
+	IsraeliQueue f=IsraeliQueueClone(p);
+	for (int j=0; j<2; j++){
+		IsraeliQueueDequeue(p);
+	}
+	for (int k=0; k<3; k++){
+		IsraeliQueueDequeue(s);
+	}
+	IsraeliQueue e=IsraeliQueueCreate(functions, comparison_function_mock, 0, 0);
+	IsraeliQueueAddFriendshipMeasure(f, mockfriendshipfunction);
+	IsraeliQueue q_arr[]={queue, p, s, f, e, e, NULL};
+	IsraeliQueue result=IsraeliQueueMerge(q_arr, comparison_function_mock);
+	printf("Test2:\nYour output: ");
+	for (int i=0; i<12; i++){
+		int s=*(int*)IsraeliQueueDequeue(result);
+		printf("%d ", s);
+	}
+	printf("\nExpected:    4 4 4 5 1 3 2 2 3 1 4 3\n");
+*/
+
+	
+	return 0;
+} 
